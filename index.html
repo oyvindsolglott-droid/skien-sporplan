@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+html = r'''<!DOCTYPE html>
 <html lang="no">
 <head>
 <meta charset="UTF-8" />
@@ -9,7 +9,7 @@
     --bg:#f4f5f7; --card:#fff; --line:#d3d7dd; --text:#111827; --muted:#6b7280;
     --blue:#d9eaf7; --blue-text:#7d97bf; --yellow:#fff200; --yellow-text:#9a9100;
     --orange:#f3e2d2; --orange-text:#b97b44; --grey:#bfbfbf; --platform:#d99694; --hall:#c00000;
-    --accent:#111827;
+    --accent:#111827; --wash:#fff7b8; --wash-slot:#f3e2d2;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
@@ -58,6 +58,7 @@
     width:100%; height:36px; border:none; outline:none; background:transparent; text-align:center;
     font-size:16px; border-radius:8px;
   }
+  td.wash-col, th.wash-col{background:var(--wash);}
   .slotcol{font-weight:700}
   .yard-wrap{overflow:auto; -webkit-overflow-scrolling:touch;}
   .yard{min-width:1180px; padding:8px 0 18px;}
@@ -72,6 +73,7 @@
   .slot.empty.yellow{background:var(--yellow); color:var(--yellow-text)}
   .slot.empty.orange{background:var(--orange); color:var(--orange-text)}
   .slot.filled{background:var(--grey); color:#000}
+  .slot.wash-filled{background:var(--orange); color:#000}
   .platform{
     background:var(--platform); writing-mode:vertical-rl; transform:rotate(180deg);
     text-align:center; font-weight:700; border-radius:7px; display:flex; align-items:center;
@@ -115,7 +117,7 @@
   </div>
 
   <section class="panel active" id="sporplan">
-    <div class="note">Slot blir grå når den får innhold. Tom slot viser slotnavn.</div>
+    <div class="note">Tom slot viser slotnavn. Fylt slot blir grå. Hvis raden er merket med vask = <strong>ja</strong>, blir sloten orange i stedet.</div>
     <div class="yard-wrap"><div class="yard"><div class="yard-grid" id="yardGrid"></div></div></div>
     <div class="stats" id="stats"></div>
   </section>
@@ -136,7 +138,7 @@
 </div>
 
 <script>
-const STORAGE_KEY = "skien_sporplan_iphone_v1";
+const STORAGE_KEY = "skien_sporplan_iphone_v2";
 
 const initialRows = [
   {type:"header", a:"ank. kl.", b:"tognr.", c:"sett nr.1", d:"sett nr.2", e:"vask", f:"Sett 1->spor", g:"1 til tognr.", h:"Sett 2->spor", i:"2 til tognr."},
@@ -163,7 +165,7 @@ const initialRows = [
   {a:"21:53", b:"831", c:"", d:"", e:"", f:"", g:"", h:"", i:""},
   {a:"22:53", b:"833", c:"", d:"", e:"", f:"", g:"", h:"", i:""},
   {type:"section", b:"ukjente tognr."},
-  ...Array.from({length:11}, () => ({a:"", b:"?", c:"", d:"", e:"", f:"", g:"", h:"", i:""}))
+  ...Array.from({length:11}, () => ({a:"", b:"ikke tursatt", c:"", d:"", e:"", f:"", g:"", h:"", i:""}))
 ];
 
 const inputSlots = ["1N","1S","2N","2S","3N","3M","3S","4N","4M","4S","5N","5M","5S","6N","6S","6SS","7N","7S","7SS","8N","8S","8SS","9","10N","10S","11N","11S","12N","12S"];
@@ -174,33 +176,37 @@ const botRow = [null,null,null,null,"8SS","7SS","platform","6SS","5S","4S","3S",
 let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
 if(!state) state = {turnering: JSON.parse(JSON.stringify(initialRows))};
 
-function markSaved(text){
-  document.getElementById("saveStateText").textContent = text;
-}
-function normalizeSlot(v){
-  return String(v || "").toUpperCase().replace(/\s+/g,"");
-}
+function markSaved(text){ document.getElementById("saveStateText").textContent = text; }
+function normalizeSlot(v){ return String(v || "").toUpperCase().replace(/\s+/g,""); }
 function persist(auto=false){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   markSaved(auto ? "Lagret automatisk" : "Lagret");
 }
+function isWashYes(v){
+  return String(v || "").trim().toLowerCase() === "ja";
+}
 function computeInndata(){
-  const result = inputSlots.map(slot => ({slot, tog:"", mat:""}));
+  const result = inputSlots.map(slot => ({slot, tog:"", mat:"", wash:false}));
   const map = Object.fromEntries(result.map((r,i)=>[r.slot,i]));
   state.turnering.forEach(row => {
     if(row.type) return;
     const tog = String(row.b || "").trim();
+    const wash = isWashYes(row.e);
+
     const mat1 = String(row.c || "").trim();
     const spor1 = normalizeSlot(row.f);
     if(mat1 && spor1 && map[spor1] !== undefined){
       result[map[spor1]].tog = tog;
       result[map[spor1]].mat = mat1;
+      result[map[spor1]].wash = wash;
     }
+
     const mat2 = String(row.d || "").trim();
     const spor2 = normalizeSlot(row.h);
     if(mat2 && spor2 && map[spor2] !== undefined){
       result[map[spor2]].tog = tog;
       result[map[spor2]].mat = mat2;
+      result[map[spor2]].wash = wash;
     }
   });
   return result;
@@ -213,9 +219,10 @@ function buildTurnering(){
   state.turnering.forEach((row, ri) => {
     const tr = document.createElement("tr");
     if(row.type === "header"){
-      cols.forEach(k => {
+      cols.forEach((k, idx) => {
         const th = document.createElement("th");
         th.textContent = row[k] || "";
+        if(idx === 4) th.classList.add("wash-col");
         tr.appendChild(th);
       });
     } else if(row.type === "section"){
@@ -225,8 +232,9 @@ function buildTurnering(){
         tr.appendChild(td);
       });
     } else {
-      cols.forEach(k => {
+      cols.forEach((k, idx) => {
         const td = document.createElement("td");
+        if(idx === 4) td.classList.add("wash-col");
         const inp = document.createElement("input");
         inp.type = "text";
         inp.inputMode = "text";
@@ -251,11 +259,11 @@ function buildTurnering(){
 function buildInndata(){
   const data = computeInndata();
   const table = document.getElementById("inndataTable");
-  table.innerHTML = "<thead><tr><th>Slot</th><th>Tognummer</th><th>Materiellnr</th></tr></thead>";
+  table.innerHTML = "<thead><tr><th>Slot</th><th>Tognummer</th><th>Materiellnr</th><th class='wash-col'>Vask</th></tr></thead>";
   const body = document.createElement("tbody");
   data.forEach(r => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td class="slotcol">${r.slot}</td><td>${escapeHtml(r.tog)}</td><td>${escapeHtml(r.mat)}</td>`;
+    tr.innerHTML = `<td class="slotcol">${r.slot}</td><td>${escapeHtml(r.tog)}</td><td>${escapeHtml(r.mat)}</td><td class="wash-col">${r.wash ? "ja" : ""}</td>`;
     body.appendChild(tr);
   });
   table.appendChild(body);
@@ -293,25 +301,28 @@ function buildSporplan(){
         grid.appendChild(e);
         return;
       }
-      const info = data[slot] || {tog:"", mat:""};
+      const info = data[slot] || {tog:"", mat:"", wash:false};
       const filled = Boolean((info.tog||"").trim() || (info.mat||"").trim());
+      const fillClass = filled ? (info.wash ? "wash-filled" : "filled") : "empty";
       const div = document.createElement("div");
-      div.className = `slot ${filled ? "filled" : "empty"} ${slotKind(slot)}`;
+      div.className = `slot ${fillClass} ${slotKind(slot)}`;
       if(["7N","7S","8N","8S"].includes(slot)) div.classList.add("hall");
       div.textContent = filled ? [info.tog, info.mat].filter(Boolean).join("\n") : slot;
       grid.appendChild(div);
     });
   }
+
   appendRow(topRow);
   appendRow(midRow);
   appendRow(botRow);
 
   const values = Object.values(data);
   const filledCount = values.filter(v => (v.tog||"").trim() || (v.mat||"").trim()).length;
+  const washCount = values.filter(v => v.wash && ((v.tog||"").trim() || (v.mat||"").trim())).length;
   document.getElementById("stats").innerHTML = `
     <div class="chip">Fylte slots: ${filledCount}</div>
     <div class="chip">Totalt slots: ${inputSlots.length}</div>
-    <div class="chip">Tomme slots: ${inputSlots.length - filledCount}</div>
+    <div class="chip">Vask = ja: ${washCount}</div>
   `;
 }
 function activateTab(name){
@@ -344,4 +355,11 @@ activateTab("sporplan");
 markSaved("Klar");
 </script>
 </body>
+</html>
+'''
+path = "/mnt/data/skien_sporplan_app_iphone_v2.html"
+with open(path, "w", encoding="utf-8") as f:
+    f.write(html)
+print(path)
+
 </html>
