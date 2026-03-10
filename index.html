@@ -63,7 +63,7 @@ min-height:36px
 }
 .segmented{
 display:grid;
-grid-template-columns:1fr 1fr 1fr 1fr;
+grid-template-columns:1fr 1fr 1fr 1fr 1fr;
 gap:6px;
 background:#e9ecf1;
 border-radius:14px;
@@ -222,8 +222,8 @@ margin-left:4px;
 display:flex;
 align-items:center
 }
-@media (max-width:900px){
-.segmented{grid-template-columns:1fr 1fr}
+@media (max-width:1100px){
+.segmented{grid-template-columns:1fr 1fr 1fr}
 }
 @media (max-width:700px){
 :root{
@@ -243,6 +243,7 @@ align-items:center
 h1{font-size:20px}
 .panel{padding:10px}
 .ios-banner,.note,.sub{font-size:12px}
+.segmented{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
@@ -264,6 +265,7 @@ h1{font-size:20px}
 <button class="seg" type="button" data-tab="turneringKveld">Turnering Kveld</button>
 <button class="seg" type="button" data-tab="turneringNatt">Turnering Natt</button>
 <button class="seg" type="button" data-tab="inndata">Inndata</button>
+<button class="seg" type="button" data-tab="oppstilling">Oppstilling</button>
 </div>
 
 <section class="panel active" id="sporplan">
@@ -330,6 +332,22 @@ h1{font-size:20px}
 </div>
 </div>
 </section>
+
+<section class="panel" id="oppstilling">
+<div class="note">Kun 5 rader brukes. Når du skriver tognr., hentes sett nr.1 og sett nr.2 automatisk fra data i kolonnene "1 til tognr." og "2 til tognr." i Turnering Kveld og Turnering Natt.</div>
+<div class="view-tools">
+<span class="label">Oppstilling visning</span>
+<button class="compact zoom-out" data-target="oppstillingZoom">Zoom ut</button>
+<button class="compact zoom-in" data-target="oppstillingZoom">Zoom inn</button>
+<button class="compact compact-toggle" data-target="oppstillingZoom">Kompakt visning</button>
+<button class="compact reset-view" data-target="oppstillingZoom">Standard</button>
+</div>
+<div class="zoom-wrap">
+<div class="zoom-inner" id="oppstillingZoom">
+<table id="oppstillingTable"></table>
+</div>
+</div>
+</section>
 </div>
 
 <script>
@@ -387,6 +405,15 @@ header,
 ...Array.from({length:11},()=>({a:"",b:"ikke tursatt",c:"",d:"",e:"",f:"",g:"",h:"",i:""}))
 ];
 
+const initialOppstillingRows = Array.from({length:5},()=>({
+a:"",
+b:"",
+c:"",
+d:"",
+e:"",
+f:""
+}));
+
 const inputSlots=["1N","1S","2N","2S","3N","3M","3S","4N","4M","4S","5N","5M","5S","6N","6S","6SS","7N","7S","7SS","8N","8S","8SS","9","10N","10S","11N","11S","12N","12S"];
 const topRow=["12N","11N","10N","9","8N","7N","platform","6N","5N","4N","3N","platform","2N","1N"];
 const midRow=["12S","11S","10S",null,"8S","7S","platform","6S","5M","4M","3M","platform","2S","1S"];
@@ -397,11 +424,13 @@ if(!state){
 state={
 turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
 turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
+oppstilling:JSON.parse(JSON.stringify(initialOppstillingRows)),
 views:{
 yardZoom:{scale:1,compact:false},
 kveldZoom:{scale:1,compact:false},
 nattZoom:{scale:1,compact:false},
-inndataZoom:{scale:1,compact:false}
+inndataZoom:{scale:1,compact:false},
+oppstillingZoom:{scale:1,compact:false}
 }
 };
 }
@@ -410,8 +439,12 @@ state.views={
 yardZoom:{scale:1,compact:false},
 kveldZoom:{scale:1,compact:false},
 nattZoom:{scale:1,compact:false},
-inndataZoom:{scale:1,compact:false}
+inndataZoom:{scale:1,compact:false},
+oppstillingZoom:{scale:1,compact:false}
 };
+}
+if(!state.oppstilling){
+state.oppstilling=JSON.parse(JSON.stringify(initialOppstillingRows));
 }
 
 function markSaved(t){
@@ -420,6 +453,10 @@ document.getElementById("saveStateText").textContent=t;
 
 function normalizeSlot(v){
 return String(v||"").toUpperCase().replace(/\s+/g,"");
+}
+
+function normalizeTognr(v){
+return String(v||"").trim();
 }
 
 function persist(auto=false){
@@ -508,6 +545,7 @@ inp.addEventListener("input",e=>{
 state[key][ri][k]=e.target.value;
 buildInndata();
 buildSporplan();
+buildOppstilling();
 persist(true);
 });
 td.appendChild(inp);
@@ -530,6 +568,83 @@ const body=document.createElement("tbody");
 data.forEach(r=>{
 const tr=document.createElement("tr");
 tr.innerHTML=`<td class="slotcol">${r.slot}</td><td>${escapeHtml(r.tog)}</td><td>${escapeHtml(r.mat)}</td><td class="wash-col">${r.wash?"ja":""}</td>`;
+body.appendChild(tr);
+});
+
+table.appendChild(body);
+}
+
+function computeOppstillingLookup(){
+const lookup={};
+
+function applyRows(rows){
+rows.forEach(row=>{
+if(row.type) return;
+
+const out1=normalizeTognr(row.g);
+const out2=normalizeTognr(row.i);
+const mat1=String(row.c||"").trim();
+const mat2=String(row.d||"").trim();
+
+if(out1 && mat1){
+if(!lookup[out1]) lookup[out1]={set1:"",set2:""};
+lookup[out1].set1=mat1;
+}
+if(out2 && mat2){
+if(!lookup[out2]) lookup[out2]={set1:"",set2:""};
+lookup[out2].set2=mat2;
+}
+});
+}
+
+applyRows(state.turneringKveld);
+applyRows(state.turneringNatt);
+
+return lookup;
+}
+
+function buildOppstilling(){
+const lookup=computeOppstillingLookup();
+const table=document.getElementById("oppstillingTable");
+table.innerHTML="";
+const thead=document.createElement("thead");
+thead.innerHTML="<tr><th>avg. kl.</th><th>tognr.</th><th>fra spor</th><th>enk/dobb</th><th>sett nr.1</th><th>sett nr.2</th></tr>";
+table.appendChild(thead);
+
+const body=document.createElement("tbody");
+
+state.oppstilling.forEach((row,ri)=>{
+const tr=document.createElement("tr");
+
+["a","b","c","d"].forEach(key=>{
+const td=document.createElement("td");
+const inp=document.createElement("input");
+inp.type="text";
+inp.inputMode="text";
+inp.autocapitalize="off";
+inp.autocorrect="off";
+inp.spellcheck=false;
+inp.value=row[key]||"";
+inp.addEventListener("input",e=>{
+state.oppstilling[ri][key]=e.target.value;
+buildOppstilling();
+persist(true);
+});
+td.appendChild(inp);
+tr.appendChild(td);
+});
+
+const tognr=normalizeTognr(row.b);
+const match=lookup[tognr]||{set1:"",set2:""};
+
+const tdSet1=document.createElement("td");
+tdSet1.textContent=match.set1||"";
+tr.appendChild(tdSet1);
+
+const tdSet2=document.createElement("td");
+tdSet2.textContent=match.set2||"";
+tr.appendChild(tdSet2);
+
 body.appendChild(tr);
 });
 
@@ -681,7 +796,7 @@ persist(true);
 });
 });
 
-["yardZoom","kveldZoom","nattZoom","inndataZoom"].forEach(applyView);
+["yardZoom","kveldZoom","nattZoom","inndataZoom","oppstillingZoom"].forEach(applyView);
 }
 
 document.querySelectorAll(".seg").forEach(btn=>btn.addEventListener("click",()=>activateTab(btn.dataset.tab)));
@@ -693,11 +808,13 @@ if(!confirm("Nullstille hele appen?")) return;
 state={
 turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
 turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
+oppstilling:JSON.parse(JSON.stringify(initialOppstillingRows)),
 views:{
 yardZoom:{scale:1,compact:false},
 kveldZoom:{scale:1,compact:false},
 nattZoom:{scale:1,compact:false},
-inndataZoom:{scale:1,compact:false}
+inndataZoom:{scale:1,compact:false},
+oppstillingZoom:{scale:1,compact:false}
 }
 };
 persist(false);
@@ -705,6 +822,7 @@ buildTurnering("turneringKveldTable","turneringKveld");
 buildTurnering("turneringNattTable","turneringNatt");
 buildInndata();
 buildSporplan();
+buildOppstilling();
 initViewControls();
 activateTab("sporplan");
 });
@@ -713,6 +831,7 @@ buildTurnering("turneringKveldTable","turneringKveld");
 buildTurnering("turneringNattTable","turneringNatt");
 buildInndata();
 buildSporplan();
+buildOppstilling();
 initViewControls();
 activateTab("sporplan");
 markSaved("Klar");
