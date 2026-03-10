@@ -1,49 +1,100 @@
-# Recreate the corrected full HTML file so the user can download and replace their index.html
-
-html = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="no">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes" />
 <title>Skien sporplan iPhone</title>
+
 <style>
-:root{--bg:#f4f5f7;--card:#fff;--line:#d3d7dd;--text:#111827;--muted:#6b7280;--blue:#d9eaf7;--blue-text:#7d97bf;--yellow:#fff200;--yellow-text:#9a9100;--orange:#f3e2d2;--orange-text:#b97b44;--grey:#bfbfbf;--platform:#d99694;--hall:#c00000;--wash:#fff7b8}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0}
-.app{max-width:1280px;margin:0 auto;padding:12px}
-h1{font-size:22px;margin:0 0 6px}.sub{margin:0 0 12px;color:var(--muted);font-size:14px}
-.ios-banner{background:#eef5ff;border:1px solid #bfd4ff;color:#274472;border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:14px}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-button{appearance:none;-webkit-appearance:none;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;font:inherit;color:var(--text);min-height:44px}
-.segmented{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;background:#e9ecf1;border-radius:14px;padding:6px;margin-bottom:12px;position:sticky;top:0;z-index:10}
-.segmented button{border:none;background:transparent;min-height:44px;font-weight:600}
-.segmented button.active{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.panel{display:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;overflow:auto}
-.panel.active{display:block}
-.note{background:#fafafa;border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px}
-table{border-collapse:collapse;width:100%;min-width:980px;background:#fff}
-th,td{border:1px solid var(--line);text-align:center;min-width:72px;height:46px;padding:4px 6px}
-th{background:#f3f4f6;position:sticky;top:0;z-index:2}
-td input{width:100%;height:36px;border:none;outline:none;background:transparent;text-align:center;font-size:16px;border-radius:8px}
-td.wash-col,th.wash-col{background:var(--wash)}
-.slotcol{font-weight:700}
-.yard-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
-.yard{min-width:1180px;padding:8px 0 18px}
-.yard-grid{display:grid;grid-template-columns:repeat(14,78px);gap:6px;align-items:stretch}
-.head{text-align:center;font-weight:700}
-.slot{border:2px solid #000;border-radius:7px;min-height:92px;display:flex;align-items:center;justify-content:center;padding:8px;text-align:center;white-space:pre-line;font-weight:700;font-size:17px;line-height:1.15}
-.slot.empty.blue{background:var(--blue);color:var(--blue-text)}
-.slot.empty.yellow{background:var(--yellow);color:var(--yellow-text)}
-.slot.empty.orange{background:var(--orange);color:var(--orange-text)}
-.slot.filled{background:var(--grey);color:#000}
-.slot.wash-filled{background:var(--orange);color:#000}
-.platform{background:var(--platform);writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-weight:700;border-radius:7px;display:flex;align-items:center;justify-content:center;min-height:92px}
-.empty-space{min-height:1px}
-.hall{border-color:var(--hall)!important}
-.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 10px;font-size:14px}
-.save-indicator{font-size:13px;color:var(--muted);margin-left:4px;display:flex;align-items:center}
+:root{
+--bg:#f4f5f7;
+--card:#fff;
+--line:#d3d7dd;
+--text:#111827;
+--muted:#6b7280;
+--blue:#d9eaf7;
+--blue-text:#7d97bf;
+--yellow:#fff200;
+--yellow-text:#9a9100;
+--orange:#f3e2d2;
+--orange-text:#b97b44;
+--grey:#bfbfbf;
+--platform:#d99694;
+--wash:#fff7b8
+}
+
+*{box-sizing:border-box}
+
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;
+background:var(--bg);
+}
+
+.app{
+max-width:1200px;
+margin:auto;
+padding:12px;
+}
+
+.segmented{
+display:grid;
+grid-template-columns:1fr 1fr 1fr 1fr;
+gap:6px;
+margin-bottom:12px;
+}
+
+.segmented button{
+padding:12px;
+border-radius:12px;
+border:1px solid #ccc;
+background:white;
+}
+
+.panel{
+display:none;
+}
+
+.panel.active{
+display:block;
+}
+
+.yard-grid{
+display:grid;
+grid-template-columns:repeat(14,78px);
+gap:6px;
+}
+
+.slot{
+border:2px solid black;
+border-radius:7px;
+height:90px;
+display:flex;
+align-items:center;
+justify-content:center;
+white-space:pre-line;
+font-weight:700;
+}
+
+.slot.empty.blue{background:#d9eaf7;color:#7d97bf}
+.slot.empty.yellow{background:#fff200;color:#9a9100}
+.slot.empty.orange{background:#f3e2d2;color:#b97b44}
+
+.slot.filled{
+background:#bfbfbf;
+}
+
+.slot.wash-filled{
+background:#f3e2d2;
+}
+
+.platform{
+background:#d99694;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:700;
+}
 </style>
 </head>
 
@@ -51,128 +102,92 @@ td.wash-col,th.wash-col{background:var(--wash)}
 
 <div class="app">
 
-<h1>Skien sporplan</h1>
-<p class="sub">iPhone-tilpasset versjon</p>
-
-<div class="ios-banner">Åpne i Safari og legg gjerne til på hjemskjermen.</div>
-
-<div class="toolbar">
-<button id="saveBtn">Lagre</button>
-<button id="resetBtn">Nullstill</button>
-<span class="save-indicator" id="saveStateText">Ikke lagret ennå</span>
-</div>
+<h2>Skien sporplan</h2>
 
 <div class="segmented">
-<button class="seg active" data-tab="sporplan">Sporplan</button>
-<button class="seg" data-tab="turneringKveld">Turnering Kveld</button>
-<button class="seg" data-tab="turneringNatt">Turnering Natt</button>
-<button class="seg" data-tab="inndata">Inndata</button>
+<button onclick="show('sporplan')">Sporplan</button>
+<button onclick="show('turneringKveld')">Turnering kveld</button>
+<button onclick="show('turneringNatt')">Turnering natt</button>
+<button onclick="show('inndata')">Inndata</button>
 </div>
 
-<section class="panel active" id="sporplan">
-<div class="yard-wrap">
-<div class="yard">
-<div class="yard-grid" id="yardGrid"></div>
+<div id="sporplan" class="panel active">
+<div class="yard-grid" id="yard"></div>
 </div>
+
+<div id="turneringKveld" class="panel">
+Turnering kveld
 </div>
-<div class="stats" id="stats"></div>
-</section>
 
-<section class="panel" id="turneringKveld">
-<table id="turneringKveldTable"></table>
-</section>
+<div id="turneringNatt" class="panel">
+Turnering natt
+</div>
 
-<section class="panel" id="turneringNatt">
-<table id="turneringNattTable"></table>
-</section>
-
-<section class="panel" id="inndata">
-<table id="inndataTable"></table>
-</section>
+<div id="inndata" class="panel">
+Inndata
+</div>
 
 </div>
 
 <script>
 
-const STORAGE_KEY="skien_sporplan_v3";
-
-const inputSlots=["1N","1S","2N","2S","3N","3M","3S","4N","4M","4S","5N","5M","5S","6N","6S","6SS","7N","7S","7SS","8N","8S","8SS","9","10N","10S","11N","11S","12N","12S"];
-
-const topRow=["12N","11N","10N","9","8N","7N","platform","6N","5N","4N","3N","platform","2N","1N"];
-const midRow=["12S","11S","10S",null,"8S","7S","platform","6S","5M","4M","3M","platform","2S","1S"];
-const botRow=[null,null,null,null,"8SS","7SS","platform","6SS","5S","4S","3S",null,null,null];
-
-let data={};
-inputSlots.forEach(s=>data[s]={tog:"",mat:"",wash:false});
-
-function slotKind(slot){
-if(!slot) return ""
-if(slot.endsWith("N")||slot==="9") return "blue"
-if(slot.endsWith("M")) return "yellow"
-return "orange"
+function show(id){
+document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"))
+document.getElementById(id).classList.add("active")
 }
 
-function buildSporplan(){
+const slotsTop=["12N","11N","10N","9","8N","7N","platform","6N","5N","4N","3N","platform","2N","1N"]
 
-const grid=document.getElementById("yardGrid")
-grid.innerHTML=""
+const slotsMid=["12S","11S","10S",null,"8S","7S","platform","6S","5M","4M","3M","platform","2S","1S"]
 
-function drawRow(row){
+const slotsBot=[null,null,null,null,"8SS","7SS","platform","6SS","5S","4S","3S",null,null,null]
 
-row.forEach(slot=>{
+function kind(slot){
 
-if(slot==="platform"){
-let p=document.createElement("div")
-p.className="platform"
-p.innerText="Plattform"
-grid.appendChild(p)
+if(!slot)return
+
+if(slot.endsWith("N")||slot==="9")return"blue"
+
+if(slot.endsWith("M"))return"yellow"
+
+return"orange"
+
+}
+
+const yard=document.getElementById("yard")
+
+function draw(row){
+
+row.forEach(s=>{
+
+if(s==="platform"){
+let d=document.createElement("div")
+d.className="platform"
+d.innerText="Plattform"
+yard.appendChild(d)
 return
 }
 
-if(!slot){
-let e=document.createElement("div")
-e.className="empty-space"
-grid.appendChild(e)
+if(!s){
+let d=document.createElement("div")
+yard.appendChild(d)
 return
 }
 
-let info=data[slot]
-
-let filled=(info.tog||info.mat)
-
-let div=document.createElement("div")
-
-if(filled){
-div.className="slot "+(info.wash?"wash-filled":"filled")
-div.innerText=[info.tog,info.mat].filter(Boolean).join("\\n")
-}else{
-div.className="slot empty "+slotKind(slot)
-div.innerText=slot
-}
-
-grid.appendChild(div)
+let d=document.createElement("div")
+d.className="slot empty "+kind(s)
+d.innerText=s
+yard.appendChild(d)
 
 })
 
 }
 
-drawRow(topRow)
-drawRow(midRow)
-drawRow(botRow)
-
-}
-
-buildSporplan()
+draw(slotsTop)
+draw(slotsMid)
+draw(slotsBot)
 
 </script>
 
 </body>
 </html>
-"""
-
-path = "/mnt/data/skien_sporplan_full_korrigert.html"
-
-with open(path,"w",encoding="utf-8") as f:
-    f.write(html)
-
-path
