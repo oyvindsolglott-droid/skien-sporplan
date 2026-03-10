@@ -427,8 +427,12 @@ localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
 markSaved(auto?"Lagret automatisk":"Lagret");
 }
 
-function isWashYes(v){
-return String(v||"").trim().toLowerCase()==="ja";
+function parseWashCommand(v){
+const s=String(v||"").trim().toLowerCase();
+return {
+set1: s==="ja" || s==="ja1",
+set2: s==="ja" || s==="ja2"
+};
 }
 
 function mergeRowsIntoResult(rows,result,map){
@@ -436,14 +440,14 @@ rows.forEach(row=>{
 if(row.type) return;
 
 const tog=String(row.b||"").trim();
-const wash=isWashYes(row.e);
+const wash=parseWashCommand(row.e);
 
 const mat1=String(row.c||"").trim();
 const spor1=normalizeSlot(row.f);
 if(mat1&&spor1&&map[spor1]!==undefined){
 result[map[spor1]].tog=tog;
 result[map[spor1]].mat=mat1;
-result[map[spor1]].wash=wash;
+result[map[spor1]].wash=wash.set1;
 }
 
 const mat2=String(row.d||"").trim();
@@ -451,7 +455,7 @@ const spor2=normalizeSlot(row.h);
 if(mat2&&spor2&&map[spor2]!==undefined){
 result[map[spor2]].tog=tog;
 result[map[spor2]].mat=mat2;
-result[map[spor2]].wash=wash;
+result[map[spor2]].wash=wash.set2;
 }
 });
 }
