@@ -222,6 +222,14 @@ margin-left:4px;
 display:flex;
 align-items:center
 }
+
+/* Oppstilling */
+.opp-yellow td{background:#d6d62f !important}
+.opp-yellow td input{background:transparent}
+.opp-red{color:#c00000;font-weight:700}
+.opp-greytext{color:#bdbdbd;font-weight:600}
+.opp-bold{font-weight:700}
+
 @media (max-width:1100px){
 .segmented{grid-template-columns:1fr 1fr 1fr}
 }
@@ -334,7 +342,7 @@ h1{font-size:20px}
 </section>
 
 <section class="panel" id="oppstilling">
-<div class="note">Kun 5 rader brukes. Når du skriver tognr., hentes sett nr.1 og sett nr.2 automatisk fra data i kolonnene "1 til tognr." og "2 til tognr." i Turnering Kveld og Turnering Natt.</div>
+<div class="note">Tider og tognummer er faste. Kolonne "enk/dobb" foreslås automatisk, men kan endres manuelt. "sett nr.1" hentes fra "Sett 1->spor", og "sett nr.2" fra "Sett 2->spor" i Turnering Kveld/Natt.</div>
 <div class="view-tools">
 <span class="label">Oppstilling visning</span>
 <button class="compact zoom-out" data-target="oppstillingZoom">Zoom ut</button>
@@ -405,14 +413,21 @@ header,
 ...Array.from({length:11},()=>({a:"",b:"ikke tursatt",c:"",d:"",e:"",f:"",g:"",h:"",i:""}))
 ];
 
-const initialOppstillingRows = Array.from({length:5},()=>({
-a:"",
-b:"",
-c:"",
-d:"",
-e:"",
-f:""
-}));
+const fixedOppstillingRows=[
+{time:"04:10",train:"802",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
+{time:"04:29",train:"852",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
+{time:"05:11",train:"804",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
+{time:"05:25",train:"854",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
+{time:"05:27",train:"2470",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
+{time:"05:37",train:"862",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
+{time:"06:01",train:"12472",mode:"enk",highlight:true,togClass:"opp-red",modeClass:"opp-greytext"},
+{time:"06:07",train:"806",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
+{time:"06:17",train:"864",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
+{time:"06:25",train:"856",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
+{time:"06:49",train:"2472",mode:"enk",highlight:true,togClass:"opp-red",modeClass:"opp-greytext"},
+{time:"07:09",train:"808",mode:"dobb",highlight:true,togClass:"opp-bold",modeClass:"opp-greytext"},
+{time:"08:09",train:"810",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"}
+];
 
 const inputSlots=["1N","1S","2N","2S","3N","3M","3S","4N","4M","4S","5N","5M","5S","6N","6S","6SS","7N","7S","7SS","8N","8S","8SS","9","10N","10S","11N","11S","12N","12S"];
 const topRow=["12N","11N","10N","9","8N","7N","platform","6N","5N","4N","3N","platform","2N","1N"];
@@ -424,7 +439,7 @@ if(!state){
 state={
 turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
 turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
-oppstilling:JSON.parse(JSON.stringify(initialOppstillingRows)),
+oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
 views:{
 yardZoom:{scale:1,compact:false},
 kveldZoom:{scale:1,compact:false},
@@ -443,8 +458,8 @@ inndataZoom:{scale:1,compact:false},
 oppstillingZoom:{scale:1,compact:false}
 };
 }
-if(!state.oppstilling){
-state.oppstilling=JSON.parse(JSON.stringify(initialOppstillingRows));
+if(!state.oppstillingModes){
+state.oppstillingModes=Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode]));
 }
 
 function markSaved(t){
@@ -581,19 +596,12 @@ function applyRows(rows){
 rows.forEach(row=>{
 if(row.type) return;
 
-const out1=normalizeTognr(row.g);
-const out2=normalizeTognr(row.i);
-const mat1=String(row.c||"").trim();
-const mat2=String(row.d||"").trim();
+const tog=normalizeTognr(row.b);
+if(!tog) return;
 
-if(out1 && mat1){
-if(!lookup[out1]) lookup[out1]={set1:"",set2:""};
-lookup[out1].set1=mat1;
-}
-if(out2 && mat2){
-if(!lookup[out2]) lookup[out2]={set1:"",set2:""};
-lookup[out2].set2=mat2;
-}
+if(!lookup[tog]) lookup[tog]={sett1:"",sett2:""};
+lookup[tog].sett1=String(row.f||"").trim();
+lookup[tog].sett2=String(row.h||"").trim();
 });
 }
 
@@ -608,41 +616,48 @@ const lookup=computeOppstillingLookup();
 const table=document.getElementById("oppstillingTable");
 table.innerHTML="";
 const thead=document.createElement("thead");
-thead.innerHTML="<tr><th>avg. kl.</th><th>tognr.</th><th>fra spor</th><th>enk/dobb</th><th>sett nr.1</th><th>sett nr.2</th></tr>";
+thead.innerHTML="<tr><th>avg. kl.</th><th>tognr.</th><th>enk/dobb</th><th>sett nr.1</th><th>sett nr.2</th></tr>";
 table.appendChild(thead);
 
 const body=document.createElement("tbody");
 
-state.oppstilling.forEach((row,ri)=>{
+fixedOppstillingRows.forEach(row=>{
 const tr=document.createElement("tr");
+if(row.highlight) tr.classList.add("opp-yellow");
 
-["a","b","c","d"].forEach(key=>{
-const td=document.createElement("td");
+const tdTime=document.createElement("td");
+tdTime.textContent=row.time;
+tr.appendChild(tdTime);
+
+const tdTrain=document.createElement("td");
+tdTrain.textContent=row.train;
+if(row.togClass) tdTrain.className=row.togClass;
+tr.appendChild(tdTrain);
+
+const tdMode=document.createElement("td");
 const inp=document.createElement("input");
 inp.type="text";
 inp.inputMode="text";
 inp.autocapitalize="off";
 inp.autocorrect="off";
 inp.spellcheck=false;
-inp.value=row[key]||"";
+inp.value=state.oppstillingModes[row.train] || row.mode;
+if(row.modeClass) inp.classList.add(row.modeClass);
 inp.addEventListener("input",e=>{
-state.oppstilling[ri][key]=e.target.value;
-buildOppstilling();
+state.oppstillingModes[row.train]=e.target.value;
 persist(true);
 });
-td.appendChild(inp);
-tr.appendChild(td);
-});
+tdMode.appendChild(inp);
+tr.appendChild(tdMode);
 
-const tognr=normalizeTognr(row.b);
-const match=lookup[tognr]||{set1:"",set2:""};
+const match=lookup[row.train] || {sett1:"",sett2:""};
 
 const tdSet1=document.createElement("td");
-tdSet1.textContent=match.set1||"";
+tdSet1.textContent=match.sett1 || "";
 tr.appendChild(tdSet1);
 
 const tdSet2=document.createElement("td");
-tdSet2.textContent=match.set2||"";
+tdSet2.textContent=match.sett2 || "";
 tr.appendChild(tdSet2);
 
 body.appendChild(tr);
@@ -808,7 +823,7 @@ if(!confirm("Nullstille hele appen?")) return;
 state={
 turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
 turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
-oppstilling:JSON.parse(JSON.stringify(initialOppstillingRows)),
+oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
 views:{
 yardZoom:{scale:1,compact:false},
 kveldZoom:{scale:1,compact:false},
