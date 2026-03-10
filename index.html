@@ -28,6 +28,7 @@ td.wash-col,th.wash-col{background:var(--wash)} .slotcol{font-weight:700}
 .yard-grid{display:grid;grid-template-columns:repeat(14,78px);gap:6px;align-items:stretch}
 .head{text-align:center;font-weight:700}
 .slot{border:2px solid #000;border-radius:7px;min-height:92px;display:flex;align-items:center;justify-content:center;padding:8px;text-align:center;white-space:pre-line;font-weight:700;font-size:17px;line-height:1.15}
+.mat{color:#c00000;font-style:italic;font-size:14px}
 .slot.empty.blue{background:var(--blue);color:var(--blue-text)} .slot.empty.yellow{background:var(--yellow);color:var(--yellow-text)} .slot.empty.orange{background:var(--orange);color:var(--orange-text)}
 .slot.filled{background:var(--grey);color:#000}.slot.wash-filled{background:var(--orange);color:#000}
 .platform{background:var(--platform);writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-weight:700;border-radius:7px;display:flex;align-items:center;justify-content:center;min-height:92px}
@@ -139,7 +140,14 @@ function buildSporplan(){
       const div=document.createElement("div");
       div.className=`slot ${fillClass} ${slotKind(slot)}`;
       if(["7N","7S","8N","8S"].includes(slot)) div.classList.add("hall");
-      div.textContent=filled?[info.tog,info.mat].filter(Boolean).join("\n"):slot;
+      if(filled){
+        let html="";
+        if(info.tog){ html += info.tog; }
+        if(info.mat){ html += "<br><span class='mat'>" + info.mat + "</span>"; }
+        div.innerHTML = html;
+      }else{
+        div.textContent=slot;
+      }
       grid.appendChild(div);
     })
   }
