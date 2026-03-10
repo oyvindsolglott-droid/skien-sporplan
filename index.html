@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes" />
+<meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=5, minimum-scale=0.3, viewport-fit=cover, user-scalable=yes" />
 <title>Skien sporplan iPhone</title>
 <style>
 :root{
@@ -22,7 +22,20 @@
 --green-border:#6aa84f;
 --platform:#d99694;
 --hall:#c00000;
---wash:#fff7b8
+--wash:#fff7b8;
+
+--yard-col:78px;
+--yard-gap:6px;
+--yard-min:1180px;
+--slot-min-h:92px;
+--slot-font:17px;
+--mat-font:14px;
+
+--table-min:980px;
+--cell-min:72px;
+--cell-h:46px;
+--input-h:36px;
+--input-font:16px;
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -32,28 +45,135 @@ body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0}
 h1{font-size:22px;margin:0 0 6px}
 .sub{margin:0 0 12px;color:var(--muted);font-size:14px}
 .ios-banner{background:#eef5ff;border:1px solid #bfd4ff;color:#274472;border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:14px}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-button{appearance:none;-webkit-appearance:none;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;font:inherit;color:var(--text);min-height:44px}
-.segmented{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;background:#e9ecf1;border-radius:14px;padding:6px;margin-bottom:12px;position:sticky;top:0;z-index:10}
-.segmented button{border:none;background:transparent;min-height:44px;font-weight:600}
-.segmented button.active{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.panel{display:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;overflow:auto}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+button{
+appearance:none;
+-webkit-appearance:none;
+border:1px solid var(--line);
+background:#fff;
+border-radius:12px;
+padding:12px 14px;
+font:inherit;
+color:var(--text);
+min-height:44px
+}
+button.compact{
+padding:8px 10px;
+min-height:36px
+}
+.segmented{
+display:grid;
+grid-template-columns:1fr 1fr 1fr 1fr;
+gap:6px;
+background:#e9ecf1;
+border-radius:14px;
+padding:6px;
+margin-bottom:12px;
+position:sticky;
+top:0;
+z-index:10
+}
+.segmented button{
+border:none;
+background:transparent;
+min-height:44px;
+font-weight:600
+}
+.segmented button.active{
+background:#fff;
+box-shadow:0 1px 2px rgba(0,0,0,.08)
+}
+.panel{
+display:none;
+background:var(--card);
+border:1px solid var(--line);
+border-radius:16px;
+padding:12px;
+overflow:auto
+}
 .panel.active{display:block}
-.note{background:#fafafa;border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px}
-table{border-collapse:collapse;width:100%;min-width:980px;background:#fff}
-th,td{border:1px solid var(--line);text-align:center;min-width:72px;height:46px;padding:4px 6px}
-th{background:#f3f4f6;position:sticky;top:0;z-index:2}
-td input{width:100%;height:36px;border:none;outline:none;background:transparent;text-align:center;font-size:16px;border-radius:8px}
+.note{
+background:#fafafa;
+border:1px dashed var(--line);
+border-radius:12px;
+padding:10px 12px;
+margin-bottom:12px;
+font-size:14px
+}
+.view-tools{
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+align-items:center;
+margin-bottom:10px
+}
+.view-tools .label{
+font-size:13px;
+color:var(--muted)
+}
+.zoom-wrap{
+overflow:auto;
+-webkit-overflow-scrolling:touch;
+touch-action:pan-x pan-y pinch-zoom;
+overscroll-behavior:contain
+}
+.zoom-inner{
+transform-origin:top left;
+width:max-content
+}
+table{
+border-collapse:collapse;
+width:100%;
+min-width:var(--table-min);
+background:#fff
+}
+th,td{
+border:1px solid var(--line);
+text-align:center;
+min-width:var(--cell-min);
+height:var(--cell-h);
+padding:4px 6px
+}
+th{
+background:#f3f4f6;
+position:sticky;
+top:0;
+z-index:2
+}
+td input{
+width:100%;
+height:var(--input-h);
+border:none;
+outline:none;
+background:transparent;
+text-align:center;
+font-size:var(--input-font);
+border-radius:8px
+}
 td.wash-col,th.wash-col{background:var(--wash)}
 .slotcol{font-weight:700}
-.yard-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
-.yard{min-width:1180px;padding:8px 0 18px}
-.yard-grid{display:grid;grid-template-columns:repeat(14,78px);gap:6px;align-items:stretch}
+.yard-wrap{
+overflow:auto;
+-webkit-overflow-scrolling:touch;
+touch-action:pan-x pan-y pinch-zoom;
+overscroll-behavior:contain
+}
+.yard{
+min-width:var(--yard-min);
+padding:8px 0 18px;
+width:max-content
+}
+.yard-grid{
+display:grid;
+grid-template-columns:repeat(14,var(--yard-col));
+gap:var(--yard-gap);
+align-items:stretch
+}
 .head{text-align:center;font-weight:700}
 .slot{
 border:2px solid #000;
 border-radius:7px;
-min-height:92px;
+min-height:var(--slot-min-h);
 display:flex;
 flex-direction:column;
 justify-content:space-between;
@@ -62,7 +182,7 @@ padding:8px;
 text-align:center;
 white-space:pre-line;
 font-weight:700;
-font-size:17px;
+font-size:var(--slot-font);
 line-height:1.15
 }
 .slot.empty.blue{background:var(--blue);color:var(--blue-text)}
@@ -72,21 +192,57 @@ line-height:1.15
 .slot.wash-filled{background:var(--green);color:#000;border-color:var(--green-border)}
 .slot-top{display:block;width:100%}
 .slot-bottom{display:block;width:100%}
-.mat{color:#c00000;font-style:italic;font-size:14px}
-.platform{background:var(--platform);writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-weight:700;border-radius:7px;display:flex;align-items:center;justify-content:center;min-height:92px}
+.mat{color:#c00000;font-style:italic;font-size:var(--mat-font)}
+.platform{
+background:var(--platform);
+writing-mode:vertical-rl;
+transform:rotate(180deg);
+text-align:center;
+font-weight:700;
+border-radius:7px;
+display:flex;
+align-items:center;
+justify-content:center;
+min-height:var(--slot-min-h)
+}
 .empty-space{min-height:1px}
 .hall{border-color:var(--hall)!important}
 .stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 10px;font-size:14px}
-.save-indicator{font-size:13px;color:var(--muted);margin-left:4px;display:flex;align-items:center}
-@media (max-width:900px){.segmented{grid-template-columns:1fr 1fr}}
+.chip{
+background:#fff;
+border:1px solid var(--line);
+border-radius:999px;
+padding:8px 10px;
+font-size:14px
+}
+.save-indicator{
+font-size:13px;
+color:var(--muted);
+margin-left:4px;
+display:flex;
+align-items:center
+}
+@media (max-width:900px){
+.segmented{grid-template-columns:1fr 1fr}
+}
 @media (max-width:700px){
+:root{
+--yard-col:64px;
+--yard-gap:4px;
+--yard-min:980px;
+--slot-min-h:74px;
+--slot-font:14px;
+--mat-font:11px;
+--table-min:760px;
+--cell-min:58px;
+--cell-h:38px;
+--input-h:30px;
+--input-font:14px;
+}
 .app{padding:10px}
 h1{font-size:20px}
 .panel{padding:10px}
-table{min-width:860px}
-th,td{min-width:64px;height:44px}
-.yard{min-width:1080px}
+.ios-banner,.note,.sub{font-size:12px}
 }
 </style>
 </head>
@@ -95,7 +251,7 @@ th,td{min-width:64px;height:44px}
 <h1>Skien sporplan</h1>
 <p class="sub">iPhone-tilpasset versjon</p>
 
-<div class="ios-banner">Åpne denne i <strong>Safari</strong> og bruk gjerne <strong>Legg til på Hjem-skjerm</strong>.</div>
+<div class="ios-banner">Optimert for iPhone: pinch-zoom er tillatt, og du har egne knapper for zoom inn/ut og kompakt visning på alle ark.</div>
 
 <div class="toolbar">
 <button id="saveBtn" type="button">Lagre</button>
@@ -112,28 +268,72 @@ th,td{min-width:64px;height:44px}
 
 <section class="panel active" id="sporplan">
 <div class="note">Tom slot viser slotnavn. Fylt slot blir grå. Hvis raden er merket med vask = <strong>ja</strong>, blir sloten grønn i stedet.</div>
-<div class="yard-wrap"><div class="yard"><div class="yard-grid" id="yardGrid"></div></div></div>
+<div class="view-tools">
+<span class="label">Sporplan visning</span>
+<button class="compact zoom-out" data-target="yardZoom">Zoom ut</button>
+<button class="compact zoom-in" data-target="yardZoom">Zoom inn</button>
+<button class="compact compact-toggle" data-target="yardZoom">Kompakt visning</button>
+<button class="compact reset-view" data-target="yardZoom">Standard</button>
+</div>
+<div class="yard-wrap zoom-wrap">
+<div class="yard zoom-inner" id="yardZoom">
+<div class="yard-grid" id="yardGrid"></div>
+</div>
+</div>
 <div class="stats" id="stats"></div>
 </section>
 
 <section class="panel" id="turneringKveld">
 <div class="note">Fyll inn kveld her. Natt kan overskrive ved konflikt.</div>
-<div style="overflow:auto;-webkit-overflow-scrolling:touch;"><table id="turneringKveldTable"></table></div>
+<div class="view-tools">
+<span class="label">Turnering Kveld visning</span>
+<button class="compact zoom-out" data-target="kveldZoom">Zoom ut</button>
+<button class="compact zoom-in" data-target="kveldZoom">Zoom inn</button>
+<button class="compact compact-toggle" data-target="kveldZoom">Kompakt visning</button>
+<button class="compact reset-view" data-target="kveldZoom">Standard</button>
+</div>
+<div class="zoom-wrap">
+<div class="zoom-inner" id="kveldZoom">
+<table id="turneringKveldTable"></table>
+</div>
+</div>
 </section>
 
 <section class="panel" id="turneringNatt">
 <div class="note">Fyll inn natt her. Ved konflikt vinner natt fordi den leses sist.</div>
-<div style="overflow:auto;-webkit-overflow-scrolling:touch;"><table id="turneringNattTable"></table></div>
+<div class="view-tools">
+<span class="label">Turnering Natt visning</span>
+<button class="compact zoom-out" data-target="nattZoom">Zoom ut</button>
+<button class="compact zoom-in" data-target="nattZoom">Zoom inn</button>
+<button class="compact compact-toggle" data-target="nattZoom">Kompakt visning</button>
+<button class="compact reset-view" data-target="nattZoom">Standard</button>
+</div>
+<div class="zoom-wrap">
+<div class="zoom-inner" id="nattZoom">
+<table id="turneringNattTable"></table>
+</div>
+</div>
 </section>
 
 <section class="panel" id="inndata">
 <div class="note">Leses automatisk fra Turnering Kveld og Turnering Natt.</div>
-<div style="overflow:auto;-webkit-overflow-scrolling:touch;"><table id="inndataTable"></table></div>
+<div class="view-tools">
+<span class="label">Inndata visning</span>
+<button class="compact zoom-out" data-target="inndataZoom">Zoom ut</button>
+<button class="compact zoom-in" data-target="inndataZoom">Zoom inn</button>
+<button class="compact compact-toggle" data-target="inndataZoom">Kompakt visning</button>
+<button class="compact reset-view" data-target="inndataZoom">Standard</button>
+</div>
+<div class="zoom-wrap">
+<div class="zoom-inner" id="inndataZoom">
+<table id="inndataTable"></table>
+</div>
+</div>
 </section>
 </div>
 
 <script>
-const STORAGE_KEY="skien_sporplan_iphone_v3";
+const STORAGE_KEY="skien_sporplan_iphone_v4";
 
 const header={
 type:"header",
@@ -196,7 +396,21 @@ let state=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
 if(!state){
 state={
 turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
-turneringNatt:JSON.parse(JSON.stringify(initialNattRows))
+turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
+views:{
+yardZoom:{scale:1,compact:false},
+kveldZoom:{scale:1,compact:false},
+nattZoom:{scale:1,compact:false},
+inndataZoom:{scale:1,compact:false}
+}
+};
+}
+if(!state.views){
+state.views={
+yardZoom:{scale:1,compact:false},
+kveldZoom:{scale:1,compact:false},
+nattZoom:{scale:1,compact:false},
+inndataZoom:{scale:1,compact:false}
 };
 }
 
@@ -401,19 +615,93 @@ function escapeHtml(s){
 return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 }
 
+function applyView(targetId){
+const el=document.getElementById(targetId);
+const view=state.views[targetId];
+if(!el||!view) return;
+
+el.style.transform=`scale(${view.scale})`;
+el.style.transformOrigin="top left";
+el.style.marginBottom=`${Math.max(0,(view.scale-1)*120)}px`;
+
+if(targetId==="yardZoom"){
+document.documentElement.style.setProperty("--yard-col", view.compact ? "56px" : (window.innerWidth<700?"64px":"78px"));
+document.documentElement.style.setProperty("--yard-gap", view.compact ? "3px" : (window.innerWidth<700?"4px":"6px"));
+document.documentElement.style.setProperty("--yard-min", view.compact ? "860px" : (window.innerWidth<700?"980px":"1180px"));
+document.documentElement.style.setProperty("--slot-min-h", view.compact ? "64px" : (window.innerWidth<700?"74px":"92px"));
+document.documentElement.style.setProperty("--slot-font", view.compact ? "12px" : (window.innerWidth<700?"14px":"17px"));
+document.documentElement.style.setProperty("--mat-font", view.compact ? "10px" : (window.innerWidth<700?"11px":"14px"));
+}else{
+document.documentElement.style.setProperty("--table-min", view.compact ? "620px" : (window.innerWidth<700?"760px":"980px"));
+document.documentElement.style.setProperty("--cell-min", view.compact ? "46px" : (window.innerWidth<700?"58px":"72px"));
+document.documentElement.style.setProperty("--cell-h", view.compact ? "32px" : (window.innerWidth<700?"38px":"46px"));
+document.documentElement.style.setProperty("--input-h", view.compact ? "24px" : (window.innerWidth<700?"30px":"36px"));
+document.documentElement.style.setProperty("--input-font", view.compact ? "12px" : (window.innerWidth<700?"14px":"16px"));
+}
+}
+
+function initViewControls(){
+document.querySelectorAll(".zoom-in").forEach(btn=>{
+btn.addEventListener("click",()=>{
+const id=btn.dataset.target;
+state.views[id].scale=Math.min(1.8,(state.views[id].scale||1)+0.1);
+applyView(id);
+persist(true);
+});
+});
+
+document.querySelectorAll(".zoom-out").forEach(btn=>{
+btn.addEventListener("click",()=>{
+const id=btn.dataset.target;
+state.views[id].scale=Math.max(0.45,(state.views[id].scale||1)-0.1);
+applyView(id);
+persist(true);
+});
+});
+
+document.querySelectorAll(".compact-toggle").forEach(btn=>{
+btn.addEventListener("click",()=>{
+const id=btn.dataset.target;
+state.views[id].compact=!state.views[id].compact;
+applyView(id);
+persist(true);
+});
+});
+
+document.querySelectorAll(".reset-view").forEach(btn=>{
+btn.addEventListener("click",()=>{
+const id=btn.dataset.target;
+state.views[id]={scale:1,compact:false};
+applyView(id);
+persist(true);
+});
+});
+
+["yardZoom","kveldZoom","nattZoom","inndataZoom"].forEach(applyView);
+}
+
 document.querySelectorAll(".seg").forEach(btn=>btn.addEventListener("click",()=>activateTab(btn.dataset.tab)));
+
 document.getElementById("saveBtn").addEventListener("click",()=>persist(false));
+
 document.getElementById("resetBtn").addEventListener("click",()=>{
 if(!confirm("Nullstille hele appen?")) return;
 state={
 turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
-turneringNatt:JSON.parse(JSON.stringify(initialNattRows))
+turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
+views:{
+yardZoom:{scale:1,compact:false},
+kveldZoom:{scale:1,compact:false},
+nattZoom:{scale:1,compact:false},
+inndataZoom:{scale:1,compact:false}
+}
 };
 persist(false);
 buildTurnering("turneringKveldTable","turneringKveld");
 buildTurnering("turneringNattTable","turneringNatt");
 buildInndata();
 buildSporplan();
+initViewControls();
 activateTab("sporplan");
 });
 
@@ -421,6 +709,7 @@ buildTurnering("turneringKveldTable","turneringKveld");
 buildTurnering("turneringNattTable","turneringNatt");
 buildInndata();
 buildSporplan();
+initViewControls();
 activateTab("sporplan");
 markSaved("Klar");
 </script>
