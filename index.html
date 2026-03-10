@@ -17,156 +17,160 @@ button{appearance:none;-webkit-appearance:none;border:1px solid var(--line);back
 .segmented{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;background:#e9ecf1;border-radius:14px;padding:6px;margin-bottom:12px;position:sticky;top:0;z-index:10}
 .segmented button{border:none;background:transparent;min-height:44px;font-weight:600}
 .segmented button.active{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.panel{display:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;overflow:auto}.panel.active{display:block}
+.panel{display:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;overflow:auto}
+.panel.active{display:block}
 .note{background:#fafafa;border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px}
 table{border-collapse:collapse;width:100%;min-width:980px;background:#fff}
 th,td{border:1px solid var(--line);text-align:center;min-width:72px;height:46px;padding:4px 6px}
 th{background:#f3f4f6;position:sticky;top:0;z-index:2}
 td input{width:100%;height:36px;border:none;outline:none;background:transparent;text-align:center;font-size:16px;border-radius:8px}
-td.wash-col,th.wash-col{background:var(--wash)} .slotcol{font-weight:700}
-.yard-wrap{overflow:auto;-webkit-overflow-scrolling:touch}.yard{min-width:1180px;padding:8px 0 18px}
+td.wash-col,th.wash-col{background:var(--wash)}
+.slotcol{font-weight:700}
+.yard-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
+.yard{min-width:1180px;padding:8px 0 18px}
 .yard-grid{display:grid;grid-template-columns:repeat(14,78px);gap:6px;align-items:stretch}
 .head{text-align:center;font-weight:700}
 .slot{border:2px solid #000;border-radius:7px;min-height:92px;display:flex;align-items:center;justify-content:center;padding:8px;text-align:center;white-space:pre-line;font-weight:700;font-size:17px;line-height:1.15}
-.slot.empty.blue{background:var(--blue);color:var(--blue-text)} .slot.empty.yellow{background:var(--yellow);color:var(--yellow-text)} .slot.empty.orange{background:var(--orange);color:var(--orange-text)}
-.slot.filled{background:var(--grey);color:#000}.slot.wash-filled{background:var(--orange);color:#000}
+.slot.empty.blue{background:var(--blue);color:var(--blue-text)}
+.slot.empty.yellow{background:var(--yellow);color:var(--yellow-text)}
+.slot.empty.orange{background:var(--orange);color:var(--orange-text)}
+.slot.filled{background:var(--grey);color:#000}
+.slot.wash-filled{background:var(--orange);color:#000}
 .platform{background:var(--platform);writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-weight:700;border-radius:7px;display:flex;align-items:center;justify-content:center;min-height:92px}
-.empty-space{min-height:1px}.hall{border-color:var(--hall)!important}.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 10px;font-size:14px}.save-indicator{font-size:13px;color:var(--muted);margin-left:4px;display:flex;align-items:center}
-@media (max-width:900px){.segmented{grid-template-columns:1fr 1fr}}
-@media (max-width:700px){.app{padding:10px}h1{font-size:20px}.panel{padding:10px}table{min-width:860px}th,td{min-width:64px;height:44px}.yard{min-width:1080px}}
+.empty-space{min-height:1px}
+.hall{border-color:var(--hall)!important}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 10px;font-size:14px}
+.save-indicator{font-size:13px;color:var(--muted);margin-left:4px;display:flex;align-items:center}
 </style>
 </head>
+
 <body>
+
 <div class="app">
+
 <h1>Skien sporplan</h1>
 <p class="sub">iPhone-tilpasset versjon</p>
-<div class="ios-banner">Åpne denne i <strong>Safari</strong> og bruk gjerne <strong>Legg til på Hjem-skjerm</strong>.</div>
-<div class="toolbar"><button id="saveBtn" type="button">Lagre</button><button id="resetBtn" type="button">Nullstill</button><span class="save-indicator" id="saveStateText">Ikke lagret ennå</span></div>
-<div class="segmented">
-<button class="seg active" type="button" data-tab="sporplan">Sporplan</button>
-<button class="seg" type="button" data-tab="turneringKveld">Turnering Kveld</button>
-<button class="seg" type="button" data-tab="turneringNatt">Turnering Natt</button>
-<button class="seg" type="button" data-tab="inndata">Inndata</button>
+
+<div class="ios-banner">Åpne i Safari og legg gjerne til på hjemskjermen.</div>
+
+<div class="toolbar">
+<button id="saveBtn">Lagre</button>
+<button id="resetBtn">Nullstill</button>
+<span class="save-indicator" id="saveStateText">Ikke lagret ennå</span>
 </div>
+
+<div class="segmented">
+<button class="seg active" data-tab="sporplan">Sporplan</button>
+<button class="seg" data-tab="turneringKveld">Turnering Kveld</button>
+<button class="seg" data-tab="turneringNatt">Turnering Natt</button>
+<button class="seg" data-tab="inndata">Inndata</button>
+</div>
+
 <section class="panel active" id="sporplan">
-<div class="note">Tom slot viser slotnavn. Fylt slot blir grå. Hvis raden er merket med vask = <strong>ja</strong>, blir sloten orange i stedet.</div>
-<div class="yard-wrap"><div class="yard"><div class="yard-grid" id="yardGrid"></div></div></div>
+<div class="yard-wrap">
+<div class="yard">
+<div class="yard-grid" id="yardGrid"></div>
+</div>
+</div>
 <div class="stats" id="stats"></div>
 </section>
-<section class="panel" id="turneringKveld"><div class="note">Fyll inn kveld her. Natt kan overskrive ved konflikt.</div><div style="overflow:auto;-webkit-overflow-scrolling:touch;"><table id="turneringKveldTable"></table></div></section>
-<section class="panel" id="turneringNatt"><div class="note">Fyll inn natt her. Ved konflikt vinner natt fordi den leses sist.</div><div style="overflow:auto;-webkit-overflow-scrolling:touch;"><table id="turneringNattTable"></table></div></section>
-<section class="panel" id="inndata"><div class="note">Leses automatisk fra Turnering Kveld og Turnering Natt.</div><div style="overflow:auto;-webkit-overflow-scrolling:touch;"><table id="inndataTable"></table></div></section>
+
+<section class="panel" id="turneringKveld">
+<table id="turneringKveldTable"></table>
+</section>
+
+<section class="panel" id="turneringNatt">
+<table id="turneringNattTable"></table>
+</section>
+
+<section class="panel" id="inndata">
+<table id="inndataTable"></table>
+</section>
+
 </div>
+
 <script>
-const STORAGE_KEY="skien_sporplan_iphone_v3";
-const header={type:"header",a:"ank. kl.",b:"tognr.",c:"sett nr.1",d:"sett nr.2",e:"vask",f:"Sett 1->spor",g:"1 til tognr.",h:"Sett 2->spor",i:"2 til tognr."};
-const initialKveldRows=[header,{a:"14:49",b:"2482",c:"",d:"Notodden",e:"",f:"",g:"",h:"",i:""},{a:"14:53",b:"817",c:"",d:"",e:"",f:"T",g:"",h:"",i:""},{a:"15:38",b:"2483",c:"",d:"Porsgrunn",e:"",f:"",g:"",h:"",i:""},{a:"15:53",b:"819",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"16:18",b:"2484",c:"",d:"Notodden",e:"",f:"",g:"",h:"",i:""},{a:"16:26",b:"851",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"16:53",b:"821",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"17:02",b:"2485",c:"",d:"Porsgrunn",e:"",f:"",g:"",h:"",i:""},{a:"17:30",b:"853",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"17:42",b:"861",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"17:53",b:"823",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"17:59",b:"2486",c:"",d:"Notodden",e:"",f:"",g:"",h:"",i:""},{a:"18:30",b:"855",c:"",d:"",e:"",f:"1",g:"",h:"",i:""},{a:"18:42",b:"863",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"18:53",b:"825",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"19:01",b:"2487",c:"",d:"Porsgrunn",e:"",f:"",g:"",h:"",i:""},{a:"19:31",b:"12487",c:"",d:"Skien",e:"",f:"10 s",g:"",h:"",i:""},{a:"19:53",b:"827",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"20:53",b:"829",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"20:59",b:"2489",c:"",d:"Skien",e:"",f:"10 N",g:"",h:"",i:""},{a:"21:53",b:"831",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"22:53",b:"833",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{type:"section",b:"ukjente tognr."},...Array.from({length:11},()=>({a:"",b:"ikke tursatt",c:"",d:"",e:"",f:"",g:"",h:"",i:""}))];
-const initialNattRows=[header,{a:"22:53",b:"833",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"23:53",b:"835",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"00:50",b:"837",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"01:45",b:"839",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{a:"07:42",b:"873",c:"",d:"",e:"",f:"",g:"",h:"",i:""},{type:"section",b:"ukjente tognr."},...Array.from({length:11},()=>({a:"",b:"ikke tursatt",c:"",d:"",e:"",f:"",g:"",h:"",i:""}))];
+
+const STORAGE_KEY="skien_sporplan_v3";
+
 const inputSlots=["1N","1S","2N","2S","3N","3M","3S","4N","4M","4S","5N","5M","5S","6N","6S","6SS","7N","7S","7SS","8N","8S","8SS","9","10N","10S","11N","11S","12N","12S"];
+
 const topRow=["12N","11N","10N","9","8N","7N","platform","6N","5N","4N","3N","platform","2N","1N"];
 const midRow=["12S","11S","10S",null,"8S","7S","platform","6S","5M","4M","3M","platform","2S","1S"];
 const botRow=[null,null,null,null,"8SS","7SS","platform","6SS","5S","4S","3S",null,null,null];
-let state=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
-if(!state) state={turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),turneringNatt:JSON.parse(JSON.stringify(initialNattRows))};
-function markSaved(t){document.getElementById("saveStateText").textContent=t}
-function normalizeSlot(v){return String(v||"").toUpperCase().replace(/\\s+/g,"")}
-function persist(auto=false){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));markSaved(auto?"Lagret automatisk":"Lagret")}
-function isWashYes(v){return String(v||"").trim().toLowerCase()==="ja"}
-function mergeRowsIntoResult(rows,result,map){
-  rows.forEach(row=>{
-    if(row.type) return;
-    const tog=String(row.b||"").trim();
-    const wash=isWashYes(row.e);
-    const mat1=String(row.c||"").trim();
-    const spor1=normalizeSlot(row.f);
-    if(mat1&&spor1&&map[spor1]!==undefined){result[map[spor1]].tog=tog;result[map[spor1]].mat=mat1;result[map[spor1]].wash=wash}
-    const mat2=String(row.d||"").trim();
-    const spor2=normalizeSlot(row.h);
-    if(mat2&&spor2&&map[spor2]!==undefined){result[map[spor2]].tog=tog;result[map[spor2]].mat=mat2;result[map[spor2]].wash=wash}
-  })
+
+let data={};
+inputSlots.forEach(s=>data[s]={tog:"",mat:"",wash:false});
+
+function slotKind(slot){
+if(!slot) return ""
+if(slot.endsWith("N")||slot==="9") return "blue"
+if(slot.endsWith("M")) return "yellow"
+return "orange"
 }
-function computeInndata(){
-  const result=inputSlots.map(slot=>({slot,tog:"",mat:"",wash:false}));
-  const map=Object.fromEntries(result.map((r,i)=>[r.slot,i]));
-  mergeRowsIntoResult(state.turneringKveld,result,map);
-  mergeRowsIntoResult(state.turneringNatt,result,map);
-  return result;
-}
-function buildTurnering(tableId,key){
-  const cols=["a","b","c","d","e","f","g","h","i"];
-  const table=document.getElementById(tableId); table.innerHTML="";
-  const body=document.createElement("tbody");
-  state[key].forEach((row,ri)=>{
-    const tr=document.createElement("tr");
-    if(row.type==="header"){
-      cols.forEach((k,idx)=>{const th=document.createElement("th"); th.textContent=row[k]||""; if(idx===4) th.classList.add("wash-col"); tr.appendChild(th);});
-    } else if(row.type==="section"){
-      cols.forEach((k,i)=>{const td=document.createElement("td"); if(i===1){td.textContent=row.b||"";td.style.fontWeight="700"} tr.appendChild(td);});
-    } else {
-      cols.forEach((k,idx)=>{
-        const td=document.createElement("td"); if(idx===4) td.classList.add("wash-col");
-        const inp=document.createElement("input");
-        inp.type="text"; inp.inputMode="text"; inp.autocapitalize="off"; inp.autocorrect="off"; inp.spellcheck=false; inp.value=row[k]||"";
-        inp.addEventListener("input",e=>{state[key][ri][k]=e.target.value; buildInndata(); buildSporplan(); persist(true);});
-        td.appendChild(inp); tr.appendChild(td);
-      });
-    }
-    body.appendChild(tr);
-  });
-  table.appendChild(body);
-}
-function buildInndata(){
-  const data=computeInndata();
-  const table=document.getElementById("inndataTable");
-  table.innerHTML="<thead><tr><th>Slot</th><th>Tognummer</th><th>Materiellnr</th><th class='wash-col'>Vask</th></tr></thead>";
-  const body=document.createElement("tbody");
-  data.forEach(r=>{const tr=document.createElement("tr"); tr.innerHTML=`<td class="slotcol">${r.slot}</td><td>${escapeHtml(r.tog)}</td><td>${escapeHtml(r.mat)}</td><td class="wash-col">${r.wash?"ja":""}</td>`; body.appendChild(tr);});
-  table.appendChild(body);
-}
-function slotKind(slot){if(!slot) return ""; if(slot.endsWith("N")||slot==="9") return "blue"; if(slot.endsWith("M")) return "yellow"; return "orange"}
+
 function buildSporplan(){
-  const data=Object.fromEntries(computeInndata().map(r=>[r.slot,r]));
-  const grid=document.getElementById("yardGrid"); grid.innerHTML="";
-  ["12","11","10","9","8","7","","6","5","4","3","","2","1"].forEach(txt=>{const d=document.createElement("div"); d.className="head"; d.textContent=txt; grid.appendChild(d);});
-  function appendRow(row){
-    row.forEach(slot=>{
-      if(slot==="platform"){const p=document.createElement("div"); p.className="platform"; p.textContent="Plattform"; grid.appendChild(p); return;}
-      if(!slot){const e=document.createElement("div"); e.className="empty-space"; grid.appendChild(e); return;}
-      const info=data[slot]||{tog:"",mat:"",wash:false};
-      const filled=Boolean((info.tog||"").trim()||(info.mat||"").trim());
-      const fillClass=filled?(info.wash?"wash-filled":"filled"):"empty";
-      const div=document.createElement("div");
-      div.className=`slot ${fillClass} ${slotKind(slot)}`;
-      if(["7N","7S","8N","8S"].includes(slot)) div.classList.add("hall");
-      div.textContent=filled?[info.tog,info.mat].filter(Boolean).join("\\n"):slot;
-      grid.appendChild(div);
-    })
-  }
-  appendRow(topRow); appendRow(midRow); appendRow(botRow);
-  const values=Object.values(data);
-  const filledCount=values.filter(v=>(v.tog||"").trim()||(v.mat||"").trim()).length;
-  const washCount=values.filter(v=>v.wash&&((v.tog||"").trim()||(v.mat||"").trim())).length;
-  document.getElementById("stats").innerHTML=`<div class="chip">Fylte slots: ${filledCount}</div><div class="chip">Totalt slots: ${inputSlots.length}</div><div class="chip">Vask = ja: ${washCount}</div>`;
+
+const grid=document.getElementById("yardGrid")
+grid.innerHTML=""
+
+function drawRow(row){
+
+row.forEach(slot=>{
+
+if(slot==="platform"){
+let p=document.createElement("div")
+p.className="platform"
+p.innerText="Plattform"
+grid.appendChild(p)
+return
 }
-function activateTab(name){document.querySelectorAll(".seg").forEach(btn=>btn.classList.toggle("active",btn.dataset.tab===name));document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===name));window.scrollTo({top:0,behavior:"smooth"})}
-function escapeHtml(s){return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")}
-document.querySelectorAll(".seg").forEach(btn=>btn.addEventListener("click",()=>activateTab(btn.dataset.tab)));
-document.getElementById("saveBtn").addEventListener("click",()=>persist(false));
-document.getElementById("resetBtn").addEventListener("click",()=>{
- if(!confirm("Nullstille hele appen?")) return;
- state={turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),turneringNatt:JSON.parse(JSON.stringify(initialNattRows))};
- persist(false); buildTurnering("turneringKveldTable","turneringKveld"); buildTurnering("turneringNattTable","turneringNatt"); buildInndata(); buildSporplan(); activateTab("sporplan");
-});
-buildTurnering("turneringKveldTable","turneringKveld");
-buildTurnering("turneringNattTable","turneringNatt");
-buildInndata(); buildSporplan(); activateTab("sporplan"); markSaved("Klar");
+
+if(!slot){
+let e=document.createElement("div")
+e.className="empty-space"
+grid.appendChild(e)
+return
+}
+
+let info=data[slot]
+
+let filled=(info.tog||info.mat)
+
+let div=document.createElement("div")
+
+if(filled){
+div.className="slot "+(info.wash?"wash-filled":"filled")
+div.innerText=[info.tog,info.mat].filter(Boolean).join("\\n")
+}else{
+div.className="slot empty "+slotKind(slot)
+div.innerText=slot
+}
+
+grid.appendChild(div)
+
+})
+
+}
+
+drawRow(topRow)
+drawRow(midRow)
+drawRow(botRow)
+
+}
+
+buildSporplan()
+
 </script>
+
 </body>
 </html>
 """
-path = "/mnt/data/skien_sporplan_app_iphone_v3.html"
-with open(path, "w", encoding="utf-8") as f:
-    f.write(html)
-print(path)
 
+path = "/mnt/data/skien_sporplan_full_korrigert.html"
+
+with open(path,"w",encoding="utf-8") as f:
+    f.write(html)
+
+path
