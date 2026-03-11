@@ -1,923 +1,462 @@
-<!DOCTYPE html>
-<html lang="no">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=5, minimum-scale=0.3, viewport-fit=cover, user-scalable=yes" />
-<title>Skien sporplan iPhone</title>
-<style>
-:root{
---bg:#f4f5f7;
---card:#fff;
---line:#d3d7dd;
---text:#111827;
---muted:#6b7280;
---blue:#d9eaf7;
---blue-text:#7d97bf;
---yellow:#fff200;
---yellow-text:#9a9100;
---orange:#f3e2d2;
---orange-text:#b97b44;
---grey:#bfbfbf;
---green:#c6efce;
---green-border:#6aa84f;
---platform:#d99694;
---hall:#c00000;
---wash:#fff7b8;
-
---yard-col:78px;
---yard-gap:6px;
---yard-min:1180px;
---slot-min-h:92px;
---slot-font:17px;
---mat-font:14px;
-
---table-min:980px;
---cell-min:72px;
---cell-h:46px;
---input-h:36px;
---input-font:16px;
-}
-
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0}
-.app{max-width:1280px;margin:0 auto;padding:12px}
-h1{font-size:22px;margin:0 0 6px}
-.sub{margin:0 0 12px;color:var(--muted);font-size:14px}
-.ios-banner{background:#eef5ff;border:1px solid #bfd4ff;color:#274472;border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:14px}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
-button{
-appearance:none;
--webkit-appearance:none;
-border:1px solid var(--line);
-background:#fff;
-border-radius:12px;
-padding:12px 14px;
-font:inherit;
-color:var(--text);
-min-height:44px
-}
-button.compact{
-padding:8px 10px;
-min-height:36px
-}
-.segmented{
-display:grid;
-grid-template-columns:1fr 1fr 1fr 1fr 1fr;
-gap:6px;
-background:#e9ecf1;
-border-radius:14px;
-padding:6px;
-margin-bottom:12px;
-position:sticky;
-top:0;
-z-index:10
-}
-.segmented button{
-border:none;
-background:transparent;
-min-height:44px;
-font-weight:600
-}
-.segmented button.active{
-background:#fff;
-box-shadow:0 1px 2px rgba(0,0,0,.08)
-}
-.panel{
-display:none;
-background:var(--card);
-border:1px solid var(--line);
-border-radius:16px;
-padding:12px;
-overflow:auto
-}
-.panel.active{display:block}
-.note{
-background:#fafafa;
-border:1px dashed var(--line);
-border-radius:12px;
-padding:10px 12px;
-margin-bottom:12px;
-font-size:14px
-}
-.view-tools{
-display:flex;
-gap:8px;
-flex-wrap:wrap;
-align-items:center;
-margin-bottom:10px
-}
-.view-tools .label{
-font-size:13px;
-color:var(--muted)
-}
-.zoom-wrap{
-overflow:auto;
--webkit-overflow-scrolling:touch;
-touch-action:pan-x pan-y pinch-zoom;
-overscroll-behavior:contain
-}
-.zoom-inner{
-transform-origin:top left;
-width:max-content
-}
-table{
-border-collapse:collapse;
-width:100%;
-min-width:var(--table-min);
-background:#fff
-}
-th,td{
-border:1px solid var(--line);
-text-align:center;
-min-width:var(--cell-min);
-height:var(--cell-h);
-padding:4px 6px
-}
-th{
-background:#f3f4f6;
-position:sticky;
-top:0;
-z-index:2
-}
-td input{
-width:100%;
-height:var(--input-h);
-border:none;
-outline:none;
-background:transparent;
-text-align:center;
-font-size:var(--input-font);
-border-radius:8px
-}
-td.wash-col,th.wash-col{background:var(--wash)}
-.slotcol{font-weight:700}
-.yard-wrap{
-overflow:auto;
--webkit-overflow-scrolling:touch;
-touch-action:pan-x pan-y pinch-zoom;
-overscroll-behavior:contain
-}
-.yard{
-min-width:var(--yard-min);
-padding:8px 0 18px;
-width:max-content
-}
-.yard-grid{
-display:grid;
-grid-template-columns:repeat(14,var(--yard-col));
-gap:var(--yard-gap);
-align-items:stretch
-}
-.head{text-align:center;font-weight:700}
-.slot{
-border:2px solid #000;
-border-radius:7px;
-min-height:var(--slot-min-h);
-display:flex;
-flex-direction:column;
-justify-content:space-between;
-align-items:center;
-padding:8px;
-text-align:center;
-white-space:pre-line;
-font-weight:700;
-font-size:var(--slot-font);
-line-height:1.15
-}
-.slot.empty.blue{background:var(--blue);color:var(--blue-text)}
-.slot.empty.yellow{background:var(--yellow);color:var(--yellow-text)}
-.slot.empty.orange{background:var(--orange);color:var(--orange-text)}
-.slot.filled{background:var(--grey);color:#000}
-.slot.wash-filled{background:var(--green);color:#000;border-color:var(--green-border)}
-.slot-top{display:block;width:100%}
-.slot-bottom{display:block;width:100%}
-.mat{color:#c00000;font-style:italic;font-size:var(--mat-font)}
-.platform{
-background:var(--platform);
-writing-mode:vertical-rl;
-transform:rotate(180deg);
-text-align:center;
-font-weight:700;
-border-radius:7px;
-display:flex;
-align-items:center;
-justify-content:center;
-min-height:var(--slot-min-h)
-}
-.empty-space{min-height:1px}
-.hall{border-color:var(--hall)!important}
-.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.chip{
-background:#fff;
-border:1px solid var(--line);
-border-radius:999px;
-padding:8px 10px;
-font-size:14px
-}
-.save-indicator{
-font-size:13px;
-color:var(--muted);
-margin-left:4px;
-display:flex;
-align-items:center
-}
-
-/* Oppstilling */
-.opp-yellow td{background:#d6d62f !important}
-.opp-yellow td input{background:transparent}
-.opp-red{color:#c00000;font-weight:700}
-.opp-greytext{color:#bdbdbd;font-weight:600}
-.opp-bold{font-weight:700}
-
-@media (max-width:1100px){
-.segmented{grid-template-columns:1fr 1fr 1fr}
-}
-@media (max-width:700px){
-:root{
---yard-col:64px;
---yard-gap:4px;
---yard-min:980px;
---slot-min-h:74px;
---slot-font:14px;
---mat-font:11px;
---table-min:760px;
---cell-min:58px;
---cell-h:38px;
---input-h:30px;
---input-font:14px;
-}
-.app{padding:10px}
-h1{font-size:20px}
-.panel{padding:10px}
-.ios-banner,.note,.sub{font-size:12px}
-.segmented{grid-template-columns:1fr 1fr}
-}
-</style>
-</head>
-<body>
-<div class="app">
-<h1>Skien sporplan</h1>
-<p class="sub">versjon 1.1</p>
-
-<div class="ios-banner">Data legges inn i ark "Turnering Kveld" og "Turnering Natt"</div>
-
-<div class="toolbar">
-<button id="saveBtn" type="button">Lagre</button>
-<button id="resetBtn" type="button">Nullstill</button>
-<button id="refreshVehiclesBtn" type="button">Refresh kjøretøy</button>
-<span class="save-indicator" id="saveStateText">Ikke lagret ennå</span>
-<span class="save-indicator" id="workerStateText">Worker ikke oppdatert ennå</span>
-</div>
-
-<div class="segmented">
-<button class="seg active" type="button" data-tab="sporplan">Sporplan</button>
-<button class="seg" type="button" data-tab="turneringKveld">Turnering Kveld</button>
-<button class="seg" type="button" data-tab="turneringNatt">Turnering Natt</button>
-<button class="seg" type="button" data-tab="inndata">Inndata</button>
-<button class="seg" type="button" data-tab="oppstilling">Oppstilling</button>
-</div>
-
-<section class="panel active" id="sporplan">
-<div class="note">Tom slot viser nr. på sporplassering. Fylt slot blir grå. Hvis vask-raden er merket med ja/ja1/ja2 = <strong>ja</strong>, blir planlagt sporplassering grønn i stedet.</div>
-<div class="view-tools">
-<span class="label">Sporplan visning</span>
-<button class="compact zoom-out" data-target="yardZoom">Zoom ut</button>
-<button class="compact zoom-in" data-target="yardZoom">Zoom inn</button>
-<button class="compact compact-toggle" data-target="yardZoom">Kompakt visning</button>
-<button class="compact reset-view" data-target="yardZoom">Standard</button>
-</div>
-<div class="yard-wrap zoom-wrap">
-<div class="yard zoom-inner" id="yardZoom">
-<div class="yard-grid" id="yardGrid"></div>
-</div>
-</div>
-<div class="stats" id="stats"></div>
-</section>
-
-<section class="panel" id="turneringKveld">
-<div class="note">Fyll inn kveld her. Natt kan overskrive ved konflikt.</div>
-<div class="view-tools">
-<span class="label">Turnering Kveld visning</span>
-<button class="compact zoom-out" data-target="kveldZoom">Zoom ut</button>
-<button class="compact zoom-in" data-target="kveldZoom">Zoom inn</button>
-<button class="compact compact-toggle" data-target="kveldZoom">Kompakt visning</button>
-<button class="compact reset-view" data-target="kveldZoom">Standard</button>
-</div>
-<div class="zoom-wrap">
-<div class="zoom-inner" id="kveldZoom">
-<table id="turneringKveldTable"></table>
-</div>
-</div>
-</section>
-
-<section class="panel" id="turneringNatt">
-<div class="note">Fyll inn natt her. Ved konflikt vinner natt fordi den leses sist.</div>
-<div class="view-tools">
-<span class="label">Turnering Natt visning</span>
-<button class="compact zoom-out" data-target="nattZoom">Zoom ut</button>
-<button class="compact zoom-in" data-target="nattZoom">Zoom inn</button>
-<button class="compact compact-toggle" data-target="nattZoom">Kompakt visning</button>
-<button class="compact reset-view" data-target="nattZoom">Standard</button>
-</div>
-<div class="zoom-wrap">
-<div class="zoom-inner" id="nattZoom">
-<table id="turneringNattTable"></table>
-</div>
-</div>
-</section>
-
-<section class="panel" id="inndata">
-<div class="note">Leses automatisk fra Turnering Kveld og Turnering Natt.</div>
-<div class="view-tools">
-<span class="label">Inndata visning</span>
-<button class="compact zoom-out" data-target="inndataZoom">Zoom ut</button>
-<button class="compact zoom-in" data-target="inndataZoom">Zoom inn</button>
-<button class="compact compact-toggle" data-target="inndataZoom">Kompakt visning</button>
-<button class="compact reset-view" data-target="inndataZoom">Standard</button>
-</div>
-<div class="zoom-wrap">
-<div class="zoom-inner" id="inndataZoom">
-<table id="inndataTable"></table>
-</div>
-</div>
-</section>
-
-<section class="panel" id="oppstilling">
-<div class="note">Tider og tognummer er faste. Kolonne "enk/dobb" foreslås automatisk, men kan endres manuelt. "sett nr.1" hentes fra "Sett 1->spor", og "sett nr.2" fra "Sett 2->spor" i Turnering Kveld/Natt.</div>
-<div class="view-tools">
-<span class="label">Oppstilling visning</span>
-<button class="compact zoom-out" data-target="oppstillingZoom">Zoom ut</button>
-<button class="compact zoom-in" data-target="oppstillingZoom">Zoom inn</button>
-<button class="compact compact-toggle" data-target="oppstillingZoom">Kompakt visning</button>
-<button class="compact reset-view" data-target="oppstillingZoom">Standard</button>
-</div>
-<div class="zoom-wrap">
-<div class="zoom-inner" id="oppstillingZoom">
-<table id="oppstillingTable"></table>
-</div>
-</div>
-</section>
-</div>
-
 <script>
-const STORAGE_KEY="skien_sporplan_iphone_v4";
-
-const header={
-type:"header",
-a:"ank. kl.",
-b:"tognr.",
-c:"sett nr.1",
-d:"sett nr.2",
-e:"vask",
-f:"Sett 1->spor",
-g:"1 til tognr.",
-h:"Sett 2->spor",
-i:"2 til tognr."
-};
-
-const initialKveldRows=[
-header,
-{a:"14:49",b:"2482",c:"",d:"Notodden",e:"",f:"",g:"",h:"",i:""},
-{a:"14:53",b:"817",c:"",d:"",e:"",f:"T",g:"",h:"",i:""},
-{a:"15:38",b:"2483",c:"",d:"Porsgrunn",e:"",f:"",g:"",h:"",i:""},
-{a:"15:53",b:"819",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"16:18",b:"2484",c:"",d:"Notodden",e:"",f:"",g:"",h:"",i:""},
-{a:"16:26",b:"851",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"16:53",b:"821",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"17:02",b:"2485",c:"",d:"Porsgrunn",e:"",f:"",g:"",h:"",i:""},
-{a:"17:30",b:"853",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"17:42",b:"861",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"17:53",b:"823",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"17:59",b:"2486",c:"",d:"Notodden",e:"",f:"",g:"",h:"",i:""},
-{a:"18:30",b:"855",c:"",d:"",e:"",f:"1",g:"",h:"",i:""},
-{a:"18:42",b:"863",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"18:53",b:"825",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"19:01",b:"2487",c:"",d:"Porsgrunn",e:"",f:"",g:"",h:"",i:""},
-{a:"19:31",b:"12487",c:"",d:"Skien",e:"",f:"10 s",g:"",h:"",i:""},
-{a:"19:53",b:"827",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"20:53",b:"829",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"20:59",b:"2489",c:"",d:"Skien",e:"",f:"10 N",g:"",h:"",i:""},
-{a:"21:53",b:"831",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"22:53",b:"833",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{type:"section",b:"ukjente tognr."},
-...Array.from({length:11},()=>({a:"",b:"ikke tursatt",c:"",d:"",e:"",f:"",g:"",h:"",i:""}))
-];
-
-const initialNattRows=[
-header,
-{a:"22:53",b:"833",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"23:53",b:"835",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"00:50",b:"837",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"01:45",b:"839",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{a:"07:42",b:"873",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
-{type:"section",b:"ukjente tognr."},
-...Array.from({length:11},()=>({a:"",b:"ikke tursatt",c:"",d:"",e:"",f:"",g:"",h:"",i:""}))
-];
-
-const fixedOppstillingRows=[
-{time:"04:10",train:"802",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
-{time:"04:29",train:"852",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
-{time:"05:11",train:"804",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
-{time:"05:25",train:"854",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
-{time:"05:27",train:"2470",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
-{time:"05:37",train:"862",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
-{time:"06:01",train:"12472",mode:"enk",highlight:true,togClass:"opp-red",modeClass:"opp-greytext"},
-{time:"06:07",train:"806",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
-{time:"06:17",train:"864",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
-{time:"06:25",train:"856",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
-{time:"06:49",train:"2472",mode:"enk",highlight:true,togClass:"opp-red",modeClass:"opp-greytext"},
-{time:"07:09",train:"808",mode:"dobb",highlight:true,togClass:"opp-bold",modeClass:"opp-greytext"},
-{time:"08:09",train:"810",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"}
-];
-
-const inputSlots=["1N","1S","2N","2S","3N","3M","3S","4N","4M","4S","5N","5M","5S","6N","6S","6SS","7N","7S","7SS","8N","8S","8SS","9","10N","10S","11N","11S","12N","12S"];
-const topRow=["12N","11N","10N","9","8N","7N","platform","6N","5N","4N","3N","platform","2N","1N"];
-const midRow=["12S","11S","10S",null,"8S","7S","platform","6S","5M","4M","3M","platform","2S","1S"];
-const botRow=[null,null,null,null,"8SS","7SS","platform","6SS","5S","4S","3S",null,null,null];
-
-let state=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
-if(!state){
-state={
-turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
-turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
-oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
-views:{
-yardZoom:{scale:1,compact:false},
-kveldZoom:{scale:1,compact:false},
-nattZoom:{scale:1,compact:false},
-inndataZoom:{scale:1,compact:false},
-oppstillingZoom:{scale:1,compact:false}
-}
-};
-}
-if(!state.views){
-state.views={
-yardZoom:{scale:1,compact:false},
-kveldZoom:{scale:1,compact:false},
-nattZoom:{scale:1,compact:false},
-inndataZoom:{scale:1,compact:false},
-oppstillingZoom:{scale:1,compact:false}
-};
-}
-if(!state.oppstillingModes){
-state.oppstillingModes=Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode]));
-}
-
-function markSaved(t){
-document.getElementById("saveStateText").textContent=t;
-}
-
-function normalizeSlot(v){
-return String(v||"").toUpperCase().replace(/\s+/g,"");
-}
-
-function normalizeTognr(v){
-return String(v||"").trim();
-}
-
-function persist(auto=false){
-localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
-markSaved(auto?"Lagret automatisk":"Lagret");
-}
-
-function parseWashCommand(v){
-const s=String(v||"").trim().toLowerCase();
-return {
-set1: s==="ja" || s==="ja1",
-set2: s==="ja" || s==="ja2"
-};
-}
-
-function mergeRowsIntoResult(rows,result,map){
-rows.forEach(row=>{
-if(row.type) return;
-
-const tog=String(row.b||"").trim();
-const wash=parseWashCommand(row.e);
-
-const mat1=String(row.c||"").trim();
-const spor1=normalizeSlot(row.f);
-if(mat1&&spor1&&map[spor1]!==undefined){
-result[map[spor1]].tog=tog;
-result[map[spor1]].mat=mat1;
-result[map[spor1]].wash=wash.set1;
-}
-
-const mat2=String(row.d||"").trim();
-const spor2=normalizeSlot(row.h);
-if(mat2&&spor2&&map[spor2]!==undefined){
-result[map[spor2]].tog=tog;
-result[map[spor2]].mat=mat2;
-result[map[spor2]].wash=wash.set2;
-}
-});
-}
-
-function computeInndata(){
-const result=inputSlots.map(slot=>({slot,tog:"",mat:"",wash:false}));
-const map=Object.fromEntries(result.map((r,i)=>[r.slot,i]));
-mergeRowsIntoResult(state.turneringKveld,result,map);
-mergeRowsIntoResult(state.turneringNatt,result,map);
-return result;
-}
-
-function buildTurnering(tableId,key){
-const cols=["a","b","c","d","e","f","g","h","i"];
-const table=document.getElementById(tableId);
-table.innerHTML="";
-const body=document.createElement("tbody");
-
-state[key].forEach((row,ri)=>{
-const tr=document.createElement("tr");
-
-if(row.type==="header"){
-cols.forEach((k,idx)=>{
-const th=document.createElement("th");
-th.textContent=row[k]||"";
-if(idx===4) th.classList.add("wash-col");
-tr.appendChild(th);
-});
-}else if(row.type==="section"){
-cols.forEach((k,i)=>{
-const td=document.createElement("td");
-if(i===1){
-td.textContent=row.b||"";
-td.style.fontWeight="700";
-}
-tr.appendChild(td);
-});
-}else{
-cols.forEach((k,idx)=>{
-const td=document.createElement("td");
-if(idx===4) td.classList.add("wash-col");
-const inp=document.createElement("input");
-inp.type="text";
-inp.inputMode="text";
-inp.autocapitalize="off";
-inp.autocorrect="off";
-inp.spellcheck=false;
-inp.value=row[k]||"";
-inp.addEventListener("input",e=>{
-state[key][ri][k]=e.target.value;
-buildInndata();
-buildSporplan();
-buildOppstilling();
-persist(true);
-});
-td.appendChild(inp);
-tr.appendChild(td);
-});
-}
-
-body.appendChild(tr);
-});
-
-table.appendChild(body);
-}
-
-function buildInndata(){
-const data=computeInndata();
-const table=document.getElementById("inndataTable");
-table.innerHTML="<thead><tr><th>Slot</th><th>Tognummer</th><th>Materiellnr</th><th class='wash-col'>Vask</th></tr></thead>";
-const body=document.createElement("tbody");
-
-data.forEach(r=>{
-const tr=document.createElement("tr");
-tr.innerHTML=`<td class="slotcol">${r.slot}</td><td>${escapeHtml(r.tog)}</td><td>${escapeHtml(r.mat)}</td><td class="wash-col">${r.wash?"ja":""}</td>`;
-body.appendChild(tr);
-});
-
-table.appendChild(body);
-}
-
-function computeOppstillingLookup(){
-const lookup={};
-
-function applyRows(rows){
-rows.forEach(row=>{
-if(row.type) return;
-
-const tog=normalizeTognr(row.b);
-if(!tog) return;
-
-if(!lookup[tog]) lookup[tog]={sett1:"",sett2:""};
-lookup[tog].sett1=String(row.f||"").trim();
-lookup[tog].sett2=String(row.h||"").trim();
-});
-}
-
-applyRows(state.turneringKveld);
-applyRows(state.turneringNatt);
-
-return lookup;
-}
-
-function buildOppstilling(){
-const lookup=computeOppstillingLookup();
-const table=document.getElementById("oppstillingTable");
-table.innerHTML="";
-const thead=document.createElement("thead");
-thead.innerHTML="<tr><th>avg. kl.</th><th>tognr.</th><th>enk/dobb</th><th>sett nr.1</th><th>sett nr.2</th></tr>";
-table.appendChild(thead);
-
-const body=document.createElement("tbody");
-
-fixedOppstillingRows.forEach(row=>{
-const tr=document.createElement("tr");
-if(row.highlight) tr.classList.add("opp-yellow");
-
-const tdTime=document.createElement("td");
-tdTime.textContent=row.time;
-tr.appendChild(tdTime);
-
-const tdTrain=document.createElement("td");
-tdTrain.textContent=row.train;
-if(row.togClass) tdTrain.className=row.togClass;
-tr.appendChild(tdTrain);
-
-const tdMode=document.createElement("td");
-const inp=document.createElement("input");
-inp.type="text";
-inp.inputMode="text";
-inp.autocapitalize="off";
-inp.autocorrect="off";
-inp.spellcheck=false;
-inp.value=state.oppstillingModes[row.train] || row.mode;
-if(row.modeClass) inp.classList.add(row.modeClass);
-inp.addEventListener("input",e=>{
-state.oppstillingModes[row.train]=e.target.value;
-persist(true);
-});
-tdMode.appendChild(inp);
-tr.appendChild(tdMode);
-
-const match=lookup[row.train] || {sett1:"",sett2:""};
-
-const tdSet1=document.createElement("td");
-tdSet1.textContent=match.sett1 || "";
-tr.appendChild(tdSet1);
-
-const tdSet2=document.createElement("td");
-tdSet2.textContent=match.sett2 || "";
-tr.appendChild(tdSet2);
-
-body.appendChild(tr);
-});
-
-table.appendChild(body);
-}
-
-function slotKind(slot){
-if(!slot) return "";
-if(slot.endsWith("N")||slot==="9") return "blue";
-if(slot.endsWith("M")) return "yellow";
-return "orange";
-}
-
-function buildSporplan(){
-const data=Object.fromEntries(computeInndata().map(r=>[r.slot,r]));
-const grid=document.getElementById("yardGrid");
-grid.innerHTML="";
-
-["12","11","10","9","8","7","","6","5","4","3","","2","1"].forEach(txt=>{
-const d=document.createElement("div");
-d.className="head";
-d.textContent=txt;
-grid.appendChild(d);
-});
-
-function appendRow(row){
-row.forEach(slot=>{
-if(slot==="platform"){
-const p=document.createElement("div");
-p.className="platform";
-p.textContent="Plattform";
-grid.appendChild(p);
-return;
-}
-
-if(!slot){
-const e=document.createElement("div");
-e.className="empty-space";
-grid.appendChild(e);
-return;
-}
-
-const info=data[slot]||{tog:"",mat:"",wash:false};
-const filled=Boolean((info.tog||"").trim()||(info.mat||"").trim());
-const fillClass=filled?(info.wash?"wash-filled":"filled"):"empty";
-
-const div=document.createElement("div");
-div.className=`slot ${fillClass} ${slotKind(slot)}`;
-
-if(["7N","7S","8N","8S"].includes(slot)) div.classList.add("hall");
-
-if(filled){
-let html="";
-if(info.tog){
-html += "<span class='slot-top'>" + escapeHtml(info.tog) + "</span>";
-}
-if(info.mat){
-html += "<span class='slot-bottom mat'>" + escapeHtml(info.mat) + "</span>";
-}
-div.innerHTML=html;
-}else{
-div.textContent=slot;
-}
-
-grid.appendChild(div);
-});
-}
-
-appendRow(topRow);
-appendRow(midRow);
-appendRow(botRow);
-
-const values=Object.values(data);
-const filledCount=values.filter(v=>(v.tog||"").trim()||(v.mat||"").trim()).length;
-const washCount=values.filter(v=>v.wash&&((v.tog||"").trim()||(v.mat||"").trim())).length;
-
-document.getElementById("stats").innerHTML=`<div class="chip">Fylte slots: ${filledCount}</div><div class="chip">Totalt slots: ${inputSlots.length}</div><div class="chip">Vask = ja: ${washCount}</div>`;
-}
-
-function activateTab(name){
-document.querySelectorAll(".seg").forEach(btn=>btn.classList.toggle("active",btn.dataset.tab===name));
-document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===name));
-window.scrollTo({top:0,behavior:"smooth"});
-}
-
-function escapeHtml(s){
-return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-}
-
-function applyView(targetId){
-const el=document.getElementById(targetId);
-const view=state.views[targetId];
-if(!el||!view) return;
-
-el.style.transform=`scale(${view.scale})`;
-el.style.transformOrigin="top left";
-el.style.marginBottom=`${Math.max(0,(view.scale-1)*120)}px`;
-
-if(targetId==="yardZoom"){
-document.documentElement.style.setProperty("--yard-col", view.compact ? "56px" : (window.innerWidth<700?"64px":"78px"));
-document.documentElement.style.setProperty("--yard-gap", view.compact ? "3px" : (window.innerWidth<700?"4px":"6px"));
-document.documentElement.style.setProperty("--yard-min", view.compact ? "860px" : (window.innerWidth<700?"980px":"1180px"));
-document.documentElement.style.setProperty("--slot-min-h", view.compact ? "64px" : (window.innerWidth<700?"74px":"92px"));
-document.documentElement.style.setProperty("--slot-font", view.compact ? "12px" : (window.innerWidth<700?"14px":"17px"));
-document.documentElement.style.setProperty("--mat-font", view.compact ? "10px" : (window.innerWidth<700?"11px":"14px"));
-}else{
-document.documentElement.style.setProperty("--table-min", view.compact ? "620px" : (window.innerWidth<700?"760px":"980px"));
-document.documentElement.style.setProperty("--cell-min", view.compact ? "46px" : (window.innerWidth<700?"58px":"72px"));
-document.documentElement.style.setProperty("--cell-h", view.compact ? "32px" : (window.innerWidth<700?"38px":"46px"));
-document.documentElement.style.setProperty("--input-h", view.compact ? "24px" : (window.innerWidth<700?"30px":"36px"));
-document.documentElement.style.setProperty("--input-font", view.compact ? "12px" : (window.innerWidth<700?"14px":"16px"));
-}
-}
-
-function initViewControls(){
-document.querySelectorAll(".zoom-in").forEach(btn=>{
-btn.addEventListener("click",()=>{
-const id=btn.dataset.target;
-state.views[id].scale=Math.min(1.8,(state.views[id].scale||1)+0.1);
-applyView(id);
-persist(true);
-});
-});
-
-document.querySelectorAll(".zoom-out").forEach(btn=>{
-btn.addEventListener("click",()=>{
-const id=btn.dataset.target;
-state.views[id].scale=Math.max(0.45,(state.views[id].scale||1)-0.1);
-applyView(id);
-persist(true);
-});
-});
-
-document.querySelectorAll(".compact-toggle").forEach(btn=>{
-btn.addEventListener("click",()=>{
-const id=btn.dataset.target;
-state.views[id].compact=!state.views[id].compact;
-applyView(id);
-persist(true);
-});
-});
-
-document.querySelectorAll(".reset-view").forEach(btn=>{
-btn.addEventListener("click",()=>{
-const id=btn.dataset.target;
-state.views[id]={scale:1,compact:false};
-applyView(id);
-persist(true);
-});
-});
-
-["yardZoom","kveldZoom","nattZoom","inndataZoom","oppstillingZoom"].forEach(applyView);
-}
-
-document.querySelectorAll(".seg").forEach(btn=>btn.addEventListener("click",()=>activateTab(btn.dataset.tab)));
-
-document.getElementById("saveBtn").addEventListener("click",()=>persist(false));
-
-document.getElementById("resetBtn").addEventListener("click",()=>{
-if(!confirm("Nullstille hele appen?")) return;
-state={
-turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
-turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
-oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
-views:{
-yardZoom:{scale:1,compact:false},
-kveldZoom:{scale:1,compact:false},
-nattZoom:{scale:1,compact:false},
-inndataZoom:{scale:1,compact:false},
-oppstillingZoom:{scale:1,compact:false}
-}
-};
-persist(false);
-buildTurnering("turneringKveldTable","turneringKveld");
-buildTurnering("turneringNattTable","turneringNatt");
-buildInndata();
-buildSporplan();
-buildOppstilling();
-initViewControls();
-activateTab("sporplan");
-});
-
-buildTurnering("turneringKveldTable","turneringKveld");
-buildTurnering("turneringNattTable","turneringNatt");
-buildInndata();
-buildSporplan();
-buildOppstilling();
-
-
-initViewControls();
-activateTab("sporplan");
-markSaved("Klar");
-
+const STORAGE_KEY = "skien_sporplan_iphone_v5";
 const WORKER_URL = "https://old-block-9a1a.oyvind-solglott.workers.dev";
 
-async function refreshVehicles(){
+const header = {
+  type: "header",
+  a: "ank. kl.",
+  b: "tognr.",
+  c: "sett nr.1",
+  d: "sett nr.2",
+  e: "vask",
+  f: "Sett 1->spor",
+  g: "1 til tognr.",
+  h: "Sett 2->spor",
+  i: "2 til tognr."
+};
 
-  try{
+const initialKveldRows = [
+  header,
+  {a:"14:49",b:"2482",c:"",d:"Notodden",e:"",f:"",g:"",h:"",i:""},
+  {a:"14:53",b:"817",c:"",d:"",e:"",f:"T",g:"",h:"",i:""},
+  {a:"15:38",b:"2483",c:"",d:"Porsgrunn",e:"",f:"",g:"",h:"",i:""},
+  {a:"15:53",b:"819",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"16:18",b:"2484",c:"",d:"Notodden",e:"",f:"",g:"",h:"",i:""},
+  {a:"16:26",b:"851",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"16:53",b:"821",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"17:02",b:"2485",c:"",d:"Porsgrunn",e:"",f:"",g:"",h:"",i:""},
+  {a:"17:30",b:"853",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"17:42",b:"861",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"17:53",b:"823",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"17:59",b:"2486",c:"",d:"Notodden",e:"",f:"",g:"",h:"",i:""},
+  {a:"18:30",b:"855",c:"",d:"",e:"",f:"1",g:"",h:"",i:""},
+  {a:"18:42",b:"863",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"18:53",b:"825",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"19:01",b:"2487",c:"",d:"Porsgrunn",e:"",f:"",g:"",h:"",i:""},
+  {a:"19:31",b:"12487",c:"",d:"Skien",e:"",f:"10 s",g:"",h:"",i:""},
+  {a:"19:53",b:"827",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"20:53",b:"829",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"20:59",b:"2489",c:"",d:"Skien",e:"",f:"10 N",g:"",h:"",i:""},
+  {a:"21:53",b:"831",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"22:53",b:"833",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {type:"section",b:"ukjente tognr."},
+  ...Array.from({length:11},()=>({a:"",b:"ikke tursatt",c:"",d:"",e:"",f:"",g:"",h:"",i:""}))
+];
 
-    const response = await fetch(WORKER_URL);
-    const data = await response.json();
+const initialNattRows = [
+  header,
+  {a:"22:53",b:"833",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"23:53",b:"835",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"00:50",b:"837",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"01:45",b:"839",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {a:"07:42",b:"873",c:"",d:"",e:"",f:"",g:"",h:"",i:""},
+  {type:"section",b:"ukjente tognr."},
+  ...Array.from({length:11},()=>({a:"",b:"ikke tursatt",c:"",d:"",e:"",f:"",g:"",h:"",i:""}))
+];
 
-    if(!data.ok) return;
+const fixedOppstillingRows = [
+  {time:"04:10",train:"802",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
+  {time:"04:29",train:"852",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
+  {time:"05:11",train:"804",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
+  {time:"05:25",train:"854",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
+  {time:"05:27",train:"2470",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
+  {time:"05:37",train:"862",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
+  {time:"06:01",train:"12472",mode:"enk",highlight:true,togClass:"opp-red",modeClass:"opp-greytext"},
+  {time:"06:07",train:"806",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
+  {time:"06:17",train:"864",mode:"enk",highlight:false,togClass:"",modeClass:"opp-greytext"},
+  {time:"06:25",train:"856",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"},
+  {time:"06:49",train:"2472",mode:"enk",highlight:true,togClass:"opp-red",modeClass:"opp-greytext"},
+  {time:"07:09",train:"808",mode:"dobb",highlight:true,togClass:"opp-bold",modeClass:"opp-greytext"},
+  {time:"08:09",train:"810",mode:"dobb",highlight:false,togClass:"",modeClass:"opp-greytext"}
+];
 
-    const trains = data.trains;
+const inputSlots = ["1N","1S","2N","2S","3N","3M","3S","4N","4M","4S","5N","5M","5S","6N","6S","6SS","7N","7S","7SS","8N","8S","8SS","9","10N","10S","11N","11S","12N","12S"];
+const topRow = ["12N","11N","10N","9","8N","7N","platform","6N","5N","4N","3N","platform","2N","1N"];
+const midRow = ["12S","11S","10S",null,"8S","7S","platform","6S","5M","4M","3M","platform","2S","1S"];
+const botRow = [null,null,null,null,"8SS","7SS","platform","6SS","5S","4S","3S",null,null,null];
 
-    function apply(rows){
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
 
-      rows.forEach(row=>{
-
-        if(row.type) return;
-
-        const tog = String(row.b || "").trim();
-
-        if(!trains[tog]) return;
-
-        const vehicles = trains[tog];
-
-        if(!row.c && vehicles[0]){
-          row.c = vehicles[0];
-        }
-
-        if(!row.d && vehicles[1]){
-          row.d = vehicles[1];
-        }
-
-      });
-
+if (!state) {
+  state = {
+    turneringKveld: JSON.parse(JSON.stringify(initialKveldRows)),
+    turneringNatt: JSON.parse(JSON.stringify(initialNattRows)),
+    oppstillingModes: Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r.mode])),
+    views: {
+      yardZoom:{scale:1,compact:false},
+      kveldZoom:{scale:1,compact:false},
+      nattZoom:{scale:1,compact:false},
+      inndataZoom:{scale:1,compact:false},
+      oppstillingZoom:{scale:1,compact:false}
     }
-
-    apply(state.turneringKveld);
-    apply(state.turneringNatt);
-
-    buildTurnering("turneringKveldTable","turneringKveld");
-    buildTurnering("turneringNattTable","turneringNatt");
-    buildInndata();
-    buildSporplan();
-    buildOppstilling();
-
-  }catch(e){
-    console.log("Worker error",e);
-  }
-
+  };
 }
 
-setTimeout(refreshVehicles,2000);
+if (!state.views) {
+  state.views = {
+    yardZoom:{scale:1,compact:false},
+    kveldZoom:{scale:1,compact:false},
+    nattZoom:{scale:1,compact:false},
+    inndataZoom:{scale:1,compact:false},
+    oppstillingZoom:{scale:1,compact:false}
+  };
+}
 
+if (!state.oppstillingModes) {
+  state.oppstillingModes = Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r.mode]));
+}
 
-const WORKER_URL = "https://old-block-9a1a.oyvind-solglott.workers.dev";
+function markSaved(text) {
+  document.getElementById("saveStateText").textContent = text;
+}
 
-function markWorkerState(text){
+function markWorkerState(text) {
   const el = document.getElementById("workerStateText");
   if (el) el.textContent = text;
 }
 
-function applyVehiclesToRows(rows, trains){
+function normalizeSlot(v) {
+  return String(v || "").toUpperCase().replace(/\s+/g, "");
+}
+
+function normalizeTognr(v) {
+  return String(v || "").trim();
+}
+
+function persist(auto=false) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  markSaved(auto ? "Lagret automatisk" : "Lagret");
+}
+
+function parseWashCommand(v) {
+  const s = String(v || "").trim().toLowerCase();
+  return {
+    set1: s === "ja" || s === "ja1",
+    set2: s === "ja" || s === "ja2"
+  };
+}
+
+function mergeRowsIntoResult(rows, result, map) {
+  rows.forEach(row => {
+    if (row.type) return;
+
+    const tog = String(row.b || "").trim();
+    const wash = parseWashCommand(row.e);
+
+    const mat1 = String(row.c || "").trim();
+    const spor1 = normalizeSlot(row.f);
+    if (mat1 && spor1 && map[spor1] !== undefined) {
+      result[map[spor1]].tog = tog;
+      result[map[spor1]].mat = mat1;
+      result[map[spor1]].wash = wash.set1;
+    }
+
+    const mat2 = String(row.d || "").trim();
+    const spor2 = normalizeSlot(row.h);
+    if (mat2 && spor2 && map[spor2] !== undefined) {
+      result[map[spor2]].tog = tog;
+      result[map[spor2]].mat = mat2;
+      result[map[spor2]].wash = wash.set2;
+    }
+  });
+}
+
+function computeInndata() {
+  const result = inputSlots.map(slot => ({slot, tog:"", mat:"", wash:false}));
+  const map = Object.fromEntries(result.map((r, i) => [r.slot, i]));
+  mergeRowsIntoResult(state.turneringKveld, result, map);
+  mergeRowsIntoResult(state.turneringNatt, result, map);
+  return result;
+}
+
+function buildTurnering(tableId, key) {
+  const cols = ["a","b","c","d","e","f","g","h","i"];
+  const table = document.getElementById(tableId);
+  table.innerHTML = "";
+  const body = document.createElement("tbody");
+
+  state[key].forEach((row, ri) => {
+    const tr = document.createElement("tr");
+
+    if (row.type === "header") {
+      cols.forEach((k, idx) => {
+        const th = document.createElement("th");
+        th.textContent = row[k] || "";
+        if (idx === 4) th.classList.add("wash-col");
+        tr.appendChild(th);
+      });
+    } else if (row.type === "section") {
+      cols.forEach((k, i) => {
+        const td = document.createElement("td");
+        if (i === 1) {
+          td.textContent = row.b || "";
+          td.style.fontWeight = "700";
+        }
+        tr.appendChild(td);
+      });
+    } else {
+      cols.forEach((k, idx) => {
+        const td = document.createElement("td");
+        if (idx === 4) td.classList.add("wash-col");
+        const inp = document.createElement("input");
+        inp.type = "text";
+        inp.inputMode = "text";
+        inp.autocapitalize = "off";
+        inp.autocorrect = "off";
+        inp.spellcheck = false;
+        inp.value = row[k] || "";
+        inp.addEventListener("input", e => {
+          state[key][ri][k] = e.target.value;
+          buildInndata();
+          buildSporplan();
+          buildOppstilling();
+          persist(true);
+        });
+        td.appendChild(inp);
+        tr.appendChild(td);
+      });
+    }
+
+    body.appendChild(tr);
+  });
+
+  table.appendChild(body);
+}
+
+function buildInndata() {
+  const data = computeInndata();
+  const table = document.getElementById("inndataTable");
+  table.innerHTML = "<thead><tr><th>Slot</th><th>Tognummer</th><th>Materiellnr</th><th class='wash-col'>Vask</th></tr></thead>";
+  const body = document.createElement("tbody");
+
+  data.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="slotcol">${r.slot}</td><td>${escapeHtml(r.tog)}</td><td>${escapeHtml(r.mat)}</td><td class="wash-col">${r.wash ? "ja" : ""}</td>`;
+    body.appendChild(tr);
+  });
+
+  table.appendChild(body);
+}
+
+function computeOppstillingLookup() {
+  const lookup = {};
+
+  function applyRows(rows) {
+    rows.forEach(row => {
+      if (row.type) return;
+      const tog = normalizeTognr(row.b);
+      if (!tog) return;
+      if (!lookup[tog]) lookup[tog] = {sett1:"", sett2:""};
+      lookup[tog].sett1 = String(row.f || "").trim();
+      lookup[tog].sett2 = String(row.h || "").trim();
+    });
+  }
+
+  applyRows(state.turneringKveld);
+  applyRows(state.turneringNatt);
+  return lookup;
+}
+
+function buildOppstilling() {
+  const lookup = computeOppstillingLookup();
+  const table = document.getElementById("oppstillingTable");
+  table.innerHTML = "";
+  const thead = document.createElement("thead");
+  thead.innerHTML = "<tr><th>avg. kl.</th><th>tognr.</th><th>enk/dobb</th><th>sett nr.1</th><th>sett nr.2</th></tr>";
+  table.appendChild(thead);
+
+  const body = document.createElement("tbody");
+
+  fixedOppstillingRows.forEach(row => {
+    const tr = document.createElement("tr");
+    if (row.highlight) tr.classList.add("opp-yellow");
+
+    const tdTime = document.createElement("td");
+    tdTime.textContent = row.time;
+    tr.appendChild(tdTime);
+
+    const tdTrain = document.createElement("td");
+    tdTrain.textContent = row.train;
+    if (row.togClass) tdTrain.className = row.togClass;
+    tr.appendChild(tdTrain);
+
+    const tdMode = document.createElement("td");
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.inputMode = "text";
+    inp.autocapitalize = "off";
+    inp.autocorrect = "off";
+    inp.spellcheck = false;
+    inp.value = state.oppstillingModes[row.train] || row.mode;
+    if (row.modeClass) inp.classList.add(row.modeClass);
+    inp.addEventListener("input", e => {
+      state.oppstillingModes[row.train] = e.target.value;
+      persist(true);
+    });
+    tdMode.appendChild(inp);
+    tr.appendChild(tdMode);
+
+    const match = lookup[row.train] || {sett1:"", sett2:""};
+
+    const tdSet1 = document.createElement("td");
+    tdSet1.textContent = match.sett1 || "";
+    tr.appendChild(tdSet1);
+
+    const tdSet2 = document.createElement("td");
+    tdSet2.textContent = match.sett2 || "";
+    tr.appendChild(tdSet2);
+
+    body.appendChild(tr);
+  });
+
+  table.appendChild(body);
+}
+
+function slotKind(slot) {
+  if (!slot) return "";
+  if (slot.endsWith("N") || slot === "9") return "blue";
+  if (slot.endsWith("M")) return "yellow";
+  return "orange";
+}
+
+function buildSporplan() {
+  const data = Object.fromEntries(computeInndata().map(r => [r.slot, r]));
+  const grid = document.getElementById("yardGrid");
+  grid.innerHTML = "";
+
+  ["12","11","10","9","8","7","","6","5","4","3","","2","1"].forEach(txt => {
+    const d = document.createElement("div");
+    d.className = "head";
+    d.textContent = txt;
+    grid.appendChild(d);
+  });
+
+  function appendRow(row) {
+    row.forEach(slot => {
+      if (slot === "platform") {
+        const p = document.createElement("div");
+        p.className = "platform";
+        p.textContent = "Plattform";
+        grid.appendChild(p);
+        return;
+      }
+
+      if (!slot) {
+        const e = document.createElement("div");
+        e.className = "empty-space";
+        grid.appendChild(e);
+        return;
+      }
+
+      const info = data[slot] || {tog:"", mat:"", wash:false};
+      const filled = Boolean((info.tog || "").trim() || (info.mat || "").trim());
+      const fillClass = filled ? (info.wash ? "wash-filled" : "filled") : "empty";
+
+      const div = document.createElement("div");
+      div.className = `slot ${fillClass} ${slotKind(slot)}`;
+
+      if (["7N","7S","8N","8S"].includes(slot)) div.classList.add("hall");
+
+      if (filled) {
+        let html = "";
+        if (info.tog) html += "<span class='slot-top'>" + escapeHtml(info.tog) + "</span>";
+        if (info.mat) html += "<span class='slot-bottom mat'>" + escapeHtml(info.mat) + "</span>";
+        div.innerHTML = html;
+      } else {
+        div.textContent = slot;
+      }
+
+      grid.appendChild(div);
+    });
+  }
+
+  appendRow(topRow);
+  appendRow(midRow);
+  appendRow(botRow);
+
+  const values = Object.values(data);
+  const filledCount = values.filter(v => (v.tog || "").trim() || (v.mat || "").trim()).length;
+  const washCount = values.filter(v => v.wash && ((v.tog || "").trim() || (v.mat || "").trim())).length;
+
+  document.getElementById("stats").innerHTML = `<div class="chip">Fylte slots: ${filledCount}</div><div class="chip">Totalt slots: ${inputSlots.length}</div><div class="chip">Vask = ja: ${washCount}</div>`;
+}
+
+function activateTab(name) {
+  document.querySelectorAll(".seg").forEach(btn => btn.classList.toggle("active", btn.dataset.tab === name));
+  document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === name));
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function escapeHtml(s) {
+  return String(s || "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+
+function applyView(targetId) {
+  const el = document.getElementById(targetId);
+  const view = state.views[targetId];
+  if (!el || !view) return;
+
+  el.style.transform = `scale(${view.scale})`;
+  el.style.transformOrigin = "top left";
+  el.style.marginBottom = `${Math.max(0, (view.scale - 1) * 120)}px`;
+
+  if (targetId === "yardZoom") {
+    document.documentElement.style.setProperty("--yard-col", view.compact ? "56px" : (window.innerWidth < 700 ? "64px" : "78px"));
+    document.documentElement.style.setProperty("--yard-gap", view.compact ? "3px" : (window.innerWidth < 700 ? "4px" : "6px"));
+    document.documentElement.style.setProperty("--yard-min", view.compact ? "860px" : (window.innerWidth < 700 ? "980px" : "1180px"));
+    document.documentElement.style.setProperty("--slot-min-h", view.compact ? "64px" : (window.innerWidth < 700 ? "74px" : "92px"));
+    document.documentElement.style.setProperty("--slot-font", view.compact ? "12px" : (window.innerWidth < 700 ? "14px" : "17px"));
+    document.documentElement.style.setProperty("--mat-font", view.compact ? "10px" : (window.innerWidth < 700 ? "11px" : "14px"));
+  } else {
+    document.documentElement.style.setProperty("--table-min", view.compact ? "620px" : (window.innerWidth < 700 ? "760px" : "980px"));
+    document.documentElement.style.setProperty("--cell-min", view.compact ? "46px" : (window.innerWidth < 700 ? "58px" : "72px"));
+    document.documentElement.style.setProperty("--cell-h", view.compact ? "32px" : (window.innerWidth < 700 ? "38px" : "46px"));
+    document.documentElement.style.setProperty("--input-h", view.compact ? "24px" : (window.innerWidth < 700 ? "30px" : "36px"));
+    document.documentElement.style.setProperty("--input-font", view.compact ? "12px" : (window.innerWidth < 700 ? "14px" : "16px"));
+  }
+}
+
+function initViewControls() {
+  document.querySelectorAll(".zoom-in").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.target;
+      state.views[id].scale = Math.min(1.8, (state.views[id].scale || 1) + 0.1);
+      applyView(id);
+      persist(true);
+    });
+  });
+
+  document.querySelectorAll(".zoom-out").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.target;
+      state.views[id].scale = Math.max(0.45, (state.views[id].scale || 1) - 0.1);
+      applyView(id);
+      persist(true);
+    });
+  });
+
+  document.querySelectorAll(".compact-toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.target;
+      state.views[id].compact = !state.views[id].compact;
+      applyView(id);
+      persist(true);
+    });
+  });
+
+  document.querySelectorAll(".reset-view").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.target;
+      state.views[id] = {scale:1, compact:false};
+      applyView(id);
+      persist(true);
+    });
+  });
+
+  ["yardZoom","kveldZoom","nattZoom","inndataZoom","oppstillingZoom"].forEach(applyView);
+}
+
+function applyVehiclesToRows(rows, trains) {
   let changes = 0;
 
   rows.forEach(row => {
@@ -943,7 +482,7 @@ function applyVehiclesToRows(rows, trains){
   return changes;
 }
 
-async function refreshVehiclesFromWorker(){
+async function refreshVehiclesFromWorker() {
   const btn = document.getElementById("refreshVehiclesBtn");
   if (btn) btn.disabled = true;
 
@@ -977,10 +516,46 @@ async function refreshVehiclesFromWorker(){
   }
 }
 
+document.querySelectorAll(".seg").forEach(btn => btn.addEventListener("click", () => activateTab(btn.dataset.tab)));
+document.getElementById("saveBtn").addEventListener("click", () => persist(false));
 document.getElementById("refreshVehiclesBtn").addEventListener("click", refreshVehiclesFromWorker);
 
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (!confirm("Nullstille hele appen?")) return;
+
+  state = {
+    turneringKveld: JSON.parse(JSON.stringify(initialKveldRows)),
+    turneringNatt: JSON.parse(JSON.stringify(initialNattRows)),
+    oppstillingModes: Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r.mode])),
+    views: {
+      yardZoom:{scale:1,compact:false},
+      kveldZoom:{scale:1,compact:false},
+      nattZoom:{scale:1,compact:false},
+      inndataZoom:{scale:1,compact:false},
+      oppstillingZoom:{scale:1,compact:false}
+    }
+  };
+
+  persist(false);
+  buildTurnering("turneringKveldTable","turneringKveld");
+  buildTurnering("turneringNattTable","turneringNatt");
+  buildInndata();
+  buildSporplan();
+  buildOppstilling();
+  initViewControls();
+  activateTab("sporplan");
+  markWorkerState("Worker ikke oppdatert ennå");
+});
+
+buildTurnering("turneringKveldTable","turneringKveld");
+buildTurnering("turneringNattTable","turneringNatt");
+buildInndata();
+buildSporplan();
+buildOppstilling();
+initViewControls();
+activateTab("sporplan");
+markSaved("Klar");
+markWorkerState("Klar for refresh");
+
 setTimeout(refreshVehiclesFromWorker, 2000);
-  
-</script>  
-</body>
-</html>
+</script>
