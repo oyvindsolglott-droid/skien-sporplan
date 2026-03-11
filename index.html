@@ -850,6 +850,49 @@ buildOppstilling();
 initViewControls();
 activateTab("sporplan");
 markSaved("Klar");
+
+
+initViewControls();
+activateTab("sporplan");
+markSaved("Klar");
+
+async function hentBaliseData() {
+
+  const url = "https://old-block-9a1a.oyvind-solglott.workers.dev";
+
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (!data.ok) return;
+
+  const trains = data.trains;
+
+  for (const tognummer in trains) {
+
+    const vehicles = trains[tognummer].join("+");
+
+    const inputs = document.querySelectorAll("input");
+
+    inputs.forEach(inp => {
+      if (inp.value === tognummer) {
+        const row = inp.closest("tr");
+        if (row) {
+          const matCell = row.querySelectorAll("input")[1];
+          if (matCell && !matCell.value) {
+            matCell.value = vehicles;
+          }
+        }
+      }
+    });
+
+  }
+
+}
+
+setInterval(hentBaliseData, 30000);
+hentBaliseData();
+
+</script>  
 </script>
 </body>
 </html>
