@@ -856,49 +856,59 @@ initViewControls();
 activateTab("sporplan");
 markSaved("Klar");
 
-async function hentBaliseData() {
-  const url = "https://old-block-9a1a.oyvind-solglott.workers.dev";
+const WORKER_URL = "https://old-block-9a1a.oyvind-solglott.workers.dev";
 
-  const response = await fetch(url);
-  const data = await response.json();
+async function refreshVehicles(){
 
-  if (!data.ok || !data.trains) return;
+  try{
 
-  const trains = data.trains;
+    const response = await fetch(WORKER_URL);
+    const data = await response.json();
 
-  ["turneringKveldTable", "turneringNattTable"].forEach(tableId => {
-    const table = document.getElementById(tableId);
-    if (!table) return;
+    if(!data.ok) return;
 
-    const rows = table.querySelectorAll("tr");
+    const trains = data.trains;
 
-    rows.forEach(row => {
-      const inputs = row.querySelectorAll("input");
-      if (inputs.length < 4) return;
+    function apply(rows){
 
-      const togInput = inputs[1];   // kolonne b = tognr.
-      const sett1Input = inputs[2]; // kolonne c = sett nr.1
-      const sett2Input = inputs[3]; // kolonne d = sett nr.2
+      rows.forEach(row=>{
 
-      const tognummer = (togInput.value || "").trim();
-      if (!tognummer || !trains[tognummer]) return;
+        if(row.type) return;
 
-      const vehicles = trains[tognummer];
+        const tog = String(row.b || "").trim();
 
-      if (!sett1Input.value && vehicles[0]) {
-        sett1Input.value = vehicles[0];
-      }
+        if(!trains[tog]) return;
 
-      if (!sett2Input.value && vehicles[1]) {
-        sett2Input.value = vehicles[1];
-      }
-    });
-  });
+        const vehicles = trains[tog];
+
+        if(!row.c && vehicles[0]){
+          row.c = vehicles[0];
+        }
+
+        if(!row.d && vehicles[1]){
+          row.d = vehicles[1];
+        }
+
+      });
+
+    }
+
+    apply(state.turneringKveld);
+    apply(state.turneringNatt);
+
+    buildTurnering("turneringKveldTable","turneringKveld");
+    buildTurnering("turneringNattTable","turneringNatt");
+    buildInndata();
+    buildSporplan();
+    buildOppstilling();
+
+  }catch(e){
+    console.log("Worker error",e);
+  }
+
 }
 
-setInterval(hentBaliseData, 30000);
-hentBaliseData();
-
+setTimeout(refreshVehicles,2000);
 </script>  
 </body>
 </html>
