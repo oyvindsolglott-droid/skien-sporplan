@@ -857,36 +857,43 @@ activateTab("sporplan");
 markSaved("Klar");
 
 async function hentBaliseData() {
-
   const url = "https://old-block-9a1a.oyvind-solglott.workers.dev";
 
   const response = await fetch(url);
   const data = await response.json();
 
-  if (!data.ok) return;
+  if (!data.ok || !data.trains) return;
 
   const trains = data.trains;
 
-  for (const tognummer in trains) {
+  ["turneringKveldTable", "turneringNattTable"].forEach(tableId => {
+    const table = document.getElementById(tableId);
+    if (!table) return;
 
-    const vehicles = trains[tognummer].join("+");
+    const rows = table.querySelectorAll("tr");
 
-    const inputs = document.querySelectorAll("input");
+    rows.forEach(row => {
+      const inputs = row.querySelectorAll("input");
+      if (inputs.length < 4) return;
 
-    inputs.forEach(inp => {
-      if (inp.value === tognummer) {
-        const row = inp.closest("tr");
-        if (row) {
-          const matCell = row.querySelectorAll("input")[1];
-          if (matCell && !matCell.value) {
-            matCell.value = vehicles;
-          }
-        }
+      const togInput = inputs[1];   // kolonne b = tognr.
+      const sett1Input = inputs[2]; // kolonne c = sett nr.1
+      const sett2Input = inputs[3]; // kolonne d = sett nr.2
+
+      const tognummer = (togInput.value || "").trim();
+      if (!tognummer || !trains[tognummer]) return;
+
+      const vehicles = trains[tognummer];
+
+      if (!sett1Input.value && vehicles[0]) {
+        sett1Input.value = vehicles[0];
+      }
+
+      if (!sett2Input.value && vehicles[1]) {
+        sett2Input.value = vehicles[1];
       }
     });
-
-  }
-
+  });
 }
 
 setInterval(hentBaliseData, 30000);
