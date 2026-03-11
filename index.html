@@ -265,7 +265,9 @@ h1{font-size:20px}
 <div class="toolbar">
 <button id="saveBtn" type="button">Lagre</button>
 <button id="resetBtn" type="button">Nullstill</button>
+<button id="refreshVehiclesBtn" type="button">Refresh kjøretøy</button>
 <span class="save-indicator" id="saveStateText">Ikke lagret ennå</span>
+<span class="save-indicator" id="workerStateText">Worker ikke oppdatert ennå</span>
 </div>
 
 <div class="segmented">
@@ -847,9 +849,6 @@ buildTurnering("turneringNattTable","turneringNatt");
 buildInndata();
 buildSporplan();
 buildOppstilling();
-initViewControls();
-activateTab("sporplan");
-markSaved("Klar");
 
 
 initViewControls();
@@ -909,6 +908,79 @@ async function refreshVehicles(){
 }
 
 setTimeout(refreshVehicles,2000);
+
+
+const WORKER_URL = "https://old-block-9a1a.oyvind-solglott.workers.dev";
+
+function markWorkerState(text){
+  const el = document.getElementById("workerStateText");
+  if (el) el.textContent = text;
+}
+
+function applyVehiclesToRows(rows, trains){
+  let changes = 0;
+
+  rows.forEach(row => {
+    if (row.type) return;
+
+    const tog = String(row.b || "").trim();
+    if (!tog) return;
+
+    const vehicles = trains[tog];
+    if (!vehicles || !vehicles.length) return;
+
+    if (!String(row.c || "").trim() && vehicles[0]) {
+      row.c = vehicles[0];
+      changes++;
+    }
+
+    if (!String(row.d || "").trim() && vehicles[1]) {
+      row.d = vehicles[1];
+      changes++;
+    }
+  });
+
+  return changes;
+}
+
+async function refreshVehiclesFromWorker(){
+  const btn = document.getElementById("refreshVehiclesBtn");
+  if (btn) btn.disabled = true;
+
+  markWorkerState("Henter kjøretøy ...");
+
+  try {
+    const response = await fetch(WORKER_URL, { cache: "no-store" });
+    const data = await response.json();
+
+    if (!response.ok || !data.ok || !data.trains) {
+      throw new Error("Mangler trains-data");
+    }
+
+    const changes =
+      applyVehiclesToRows(state.turneringKveld, data.trains) +
+      applyVehiclesToRows(state.turneringNatt, data.trains);
+
+    buildTurnering("turneringKveldTable", "turneringKveld");
+    buildTurnering("turneringNattTable", "turneringNatt");
+    buildInndata();
+    buildSporplan();
+    buildOppstilling();
+    persist(true);
+
+    markWorkerState(`Oppdatert. Endringer: ${changes}`);
+  } catch (err) {
+    markWorkerState(`Feil: ${err.message}`);
+    console.log("Worker error", err);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+document.getElementById("refreshVehiclesBtn").addEventListener("click", refreshVehiclesFromWorker);
+
+setTimeout(refreshVehiclesFromWorker, 2000);
+  
 </script>  
 </body>
 </html>
