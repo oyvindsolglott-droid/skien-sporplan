@@ -346,16 +346,16 @@ h1{font-size:20px}
 
 <div class="note">
 <strong>Kjøretøyimport</strong><br>
-Lim inn én linje per tog, for eksempel:<br>
-802=74-02<br>
-804=74-11, 74-35<br>
-852=70-14
+Skriv bare ett tognummer per linje, for eksempel:<br>
+802<br>
+804<br>
+852
 </div>
 
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px;">
-<textarea id="kjoretoyImport" style="width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;" placeholder="802=74-02&#10;803=74-02&#10;804=74-11, 74-35"></textarea>
+<textarea id="kjoretoyImport" style="width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;" placeholder="802&#10;804&#10;852"></textarea>
 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-<button type="button" id="importKjoretoyBtn">Importer kjøretøy</button>
+<button type="button" id="importKjoretoyBtn">Importer tognummer</button>
 <button type="button" id="clearKjoretoyBtn">Tøm kjøretøy</button>
 </div>
 </div>
@@ -376,7 +376,26 @@ Lim inn én linje per tog, for eksempel:<br>
 </div>
 
 <script>
-const STORAGE_KEY="skien_sporplan_iphone_v5";
+const STORAGE_KEY="skien_sporplan_iphone_v6";
+
+const vehicleLookup = {
+"802":"74-02",
+"804":"74-24",
+"838":"74-42",
+"839":"74-06",
+"840":"74-24",
+"851":"70-14",
+"852":"70-14",
+"853":"75-71",
+"855":"70-06",
+"861":"75-63",
+"862":"75-63",
+"863":"75-71",
+"864":"75-71",
+"873":"74-42",
+"2470":"70-12",
+"2489":"70-12"
+};
 
 const header={
 type:"header",
@@ -637,18 +656,10 @@ const lines=String(raw||"").split(/\r?\n/);
 const map={...state.kjoretoy};
 
 lines.forEach(line=>{
-const s=line.trim();
-if(!s) return;
+const tog=normalizeTognr(line);
+if(!tog) return;
 
-const parts=s.split("=");
-if(parts.length<2) return;
-
-const tog=normalizeTognr(parts[0]);
-const kjoretoy=parts.slice(1).join("=").trim();
-
-if(tog){
-map[tog]=kjoretoy;
-}
+map[tog]=vehicleLookup[tog] || "";
 });
 
 state.kjoretoy=map;
