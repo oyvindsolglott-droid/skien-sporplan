@@ -55,7 +55,8 @@ border-radius:12px;
 padding:12px 14px;
 font:inherit;
 color:var(--text);
-min-height:44px
+min-height:44px;
+cursor:pointer;
 }
 button.compact{
 padding:8px 10px;
@@ -230,6 +231,16 @@ align-items:center
 .opp-greytext{color:#bdbdbd;font-weight:600}
 .opp-bold{font-weight:700}
 
+.file-input{
+width:100%;
+max-width:420px;
+border:1px solid var(--line);
+border-radius:12px;
+padding:10px;
+background:#fff;
+font:inherit;
+}
+
 @media (max-width:1100px){
 .segmented{grid-template-columns:1fr 1fr 1fr}
 }
@@ -258,7 +269,7 @@ h1{font-size:20px}
 <body>
 <div class="app">
 <h1>Skien sporplan</h1>
-<p class="sub">versjon 1.1</p>
+<p class="sub">versjon 1.3</p>
 
 <div class="ios-banner">Data legges inn i ark "Turnering Kveld" og "Turnering Natt"</div>
 
@@ -343,6 +354,35 @@ h1{font-size:20px}
 
 <section class="panel" id="oppstilling">
 <div class="note">Tider og tognummer er faste. Kolonne "enk/dobb" foreslås automatisk, men kan endres manuelt. "sett nr.1" hentes fra "Sett 1->spor", og "sett nr.2" fra "Sett 2->spor" i Turnering Kveld/Natt.</div>
+
+<div class="note">
+<strong>Balise-import</strong><br>
+Velg JSON-fila du laget fra Balise, og trykk på knappen under.
+</div>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+<input class="file-input" type="file" id="baliseJsonFile" accept=".json">
+<button type="button" id="importBaliseJsonBtn">Last inn Balise-JSON</button>
+<button type="button" id="clearBaliseJsonBtn">Tøm Balise-data</button>
+<span id="baliseStatus" class="save-indicator">Ingen Balise-fil lastet inn</span>
+</div>
+
+<div class="note">
+<strong>Manuell reserve</strong><br>
+Skriv bare ett tognummer per linje hvis du vil fylle fra reserveoppslag:
+<br>802
+<br>804
+<br>852
+</div>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px;">
+<textarea id="kjoretoyImport" style="width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;" placeholder="802&#10;804&#10;852"></textarea>
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
+<button type="button" id="importKjoretoyBtn">Importer tognummer</button>
+<button type="button" id="clearKjoretoyBtn">Tøm manuell kjøretøydata</button>
+</div>
+</div>
+
 <div class="view-tools">
 <span class="label">Oppstilling visning</span>
 <button class="compact zoom-out" data-target="oppstillingZoom">Zoom ut</button>
@@ -359,7 +399,60 @@ h1{font-size:20px}
 </div>
 
 <script>
-const STORAGE_KEY="skien_sporplan_iphone_v4";
+const STORAGE_KEY="skien_sporplan_iphone_v7";
+
+const vehicleLookup = {
+"802":"74-02",
+"803":"74-11",
+"804":"75-40, 74-16",
+"805":"74-24",
+"806":"74-06, 74-37",
+"807":"74-46, 74-51",
+"808":"74-53, 74-14",
+"809":"74-02",
+"810":"74-42",
+"811":"74-16, 75-40",
+"812":"74-24, 74-11",
+"813":"74-37, 74-06",
+"814":"74-51, 74-46",
+"815":"74-14, 74-53",
+"816":"74-02",
+"817":"74-42",
+"818":"75-40, 74-16",
+"819":"74-11, 74-24",
+"820":"74-06, 74-37",
+"821":"74-46, 74-51",
+"822":"74-53, 74-14",
+"823":"74-16, 75-40",
+"824":"74-42",
+"825":"74-37, 74-06",
+"826":"74-24, 74-11",
+"827":"74-02",
+"828":"74-51, 74-46",
+"829":"74-14, 74-53",
+"830":"75-40, 74-16",
+"831":"74-42",
+"832":"74-06, 74-37",
+"833":"74-11, 74-24",
+"834":"74-02",
+"835":"74-51",
+"836":"74-53, 74-14",
+"837":"75-40",
+"838":"74-42",
+"839":"74-06",
+"840":"74-24",
+"851":"70-14",
+"852":"70-14",
+"853":"75-71",
+"855":"70-06",
+"861":"75-63",
+"862":"75-63",
+"863":"74-04",
+"864":"75-71",
+"873":"74-42",
+"2470":"70-12",
+"2489":"70-12"
+};
 
 const header={
 type:"header",
@@ -440,6 +533,9 @@ state={
 turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
 turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
 oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
+kjoretoy:{},
+baliseLookup:{},
+baliseMeta:null,
 views:{
 yardZoom:{scale:1,compact:false},
 kveldZoom:{scale:1,compact:false},
@@ -461,6 +557,15 @@ oppstillingZoom:{scale:1,compact:false}
 if(!state.oppstillingModes){
 state.oppstillingModes=Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode]));
 }
+if(!state.kjoretoy){
+state.kjoretoy={};
+}
+if(!state.baliseLookup){
+state.baliseLookup={};
+}
+if(!state.baliseMeta){
+state.baliseMeta=null;
+}
 
 function markSaved(t){
 document.getElementById("saveStateText").textContent=t;
@@ -477,6 +582,62 @@ return String(v||"").trim();
 function persist(auto=false){
 localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
 markSaved(auto?"Lagret automatisk":"Lagret");
+}
+
+function getVehicleForTrain(tog){
+const train=normalizeTognr(tog);
+return state.baliseLookup[train] || state.kjoretoy[train] || vehicleLookup[train] || "";
+}
+
+function updateBaliseStatus(){
+const el=document.getElementById("baliseStatus");
+if(!el) return;
+
+if(state.baliseMeta && state.baliseMeta.date){
+const src = state.baliseMeta.source ? ` (${state.baliseMeta.source})` : "";
+el.textContent = `Balise lastet: ${state.baliseMeta.date}${src}`;
+}else if(Object.keys(state.baliseLookup || {}).length){
+el.textContent = "Balise-data lastet";
+}else{
+el.textContent = "Ingen Balise-fil lastet inn";
+}
+}
+
+function importBaliseJsonObject(payload){
+let vehicles = {};
+let meta = null;
+
+if(payload && typeof payload === "object" && payload.vehicles && typeof payload.vehicles === "object"){
+vehicles = payload.vehicles;
+meta = {
+source: payload.source || "balise.no",
+date: payload.date || "",
+generated_at: payload.generated_at || ""
+};
+}else if(payload && typeof payload === "object"){
+vehicles = payload;
+meta = {
+source: "ukjent",
+date: "",
+generated_at: ""
+};
+}else{
+throw new Error("Ugyldig JSON-format");
+}
+
+const cleaned = {};
+Object.entries(vehicles).forEach(([key,val])=>{
+const tog = normalizeTognr(key);
+if(!tog) return;
+cleaned[tog] = String(val || "").trim();
+});
+
+state.baliseLookup = cleaned;
+state.baliseMeta = meta;
+
+persist(true);
+buildOppstilling();
+updateBaliseStatus();
 }
 
 function parseWashCommand(v){
@@ -611,12 +772,27 @@ applyRows(state.turneringNatt);
 return lookup;
 }
 
+function importKjoretoyFromText(raw){
+const lines=String(raw||"").split(/\r?\n/);
+const map={...state.kjoretoy};
+
+lines.forEach(line=>{
+const tog=normalizeTognr(line);
+if(!tog) return;
+map[tog]=getVehicleForTrain(tog);
+});
+
+state.kjoretoy=map;
+persist(true);
+buildOppstilling();
+}
+
 function buildOppstilling(){
 const lookup=computeOppstillingLookup();
 const table=document.getElementById("oppstillingTable");
 table.innerHTML="";
 const thead=document.createElement("thead");
-thead.innerHTML="<tr><th>avg. kl.</th><th>tognr.</th><th>enk/dobb</th><th>sett nr.1</th><th>sett nr.2</th></tr>";
+thead.innerHTML="<tr><th>avg. kl.</th><th>tognr.</th><th>Kjøretøy</th><th>enk/dobb</th><th>sett nr.1</th><th>sett nr.2</th></tr>";
 table.appendChild(thead);
 
 const body=document.createElement("tbody");
@@ -633,6 +809,10 @@ const tdTrain=document.createElement("td");
 tdTrain.textContent=row.train;
 if(row.togClass) tdTrain.className=row.togClass;
 tr.appendChild(tdTrain);
+
+const tdVehicle=document.createElement("td");
+tdVehicle.textContent=getVehicleForTrain(row.train);
+tr.appendChild(tdVehicle);
 
 const tdMode=document.createElement("td");
 const inp=document.createElement("input");
@@ -824,6 +1004,9 @@ state={
 turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
 turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
 oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
+kjoretoy:{},
+baliseLookup:{},
+baliseMeta:null,
 views:{
 yardZoom:{scale:1,compact:false},
 kveldZoom:{scale:1,compact:false},
@@ -839,7 +1022,51 @@ buildInndata();
 buildSporplan();
 buildOppstilling();
 initViewControls();
+updateBaliseStatus();
 activateTab("sporplan");
+});
+
+document.getElementById("importBaliseJsonBtn").addEventListener("click",()=>{
+const fileInput=document.getElementById("baliseJsonFile");
+const file=fileInput.files && fileInput.files[0];
+
+if(!file){
+alert("Velg en JSON-fil først.");
+return;
+}
+
+const reader=new FileReader();
+reader.onload=()=>{
+try{
+const payload=JSON.parse(reader.result);
+importBaliseJsonObject(payload);
+alert("Balise-JSON lastet inn.");
+}catch(err){
+alert("Klarte ikke å lese JSON-fil: " + err.message);
+}
+};
+reader.readAsText(file,"utf-8");
+});
+
+document.getElementById("clearBaliseJsonBtn").addEventListener("click",()=>{
+if(!confirm("Tømme innlest Balise-data?")) return;
+state.baliseLookup={};
+state.baliseMeta=null;
+persist(true);
+buildOppstilling();
+updateBaliseStatus();
+});
+
+document.getElementById("importKjoretoyBtn").addEventListener("click",()=>{
+const raw=document.getElementById("kjoretoyImport").value;
+importKjoretoyFromText(raw);
+});
+
+document.getElementById("clearKjoretoyBtn").addEventListener("click",()=>{
+if(!confirm("Tømme alle manuelle kjøretøydata?")) return;
+state.kjoretoy={};
+persist(true);
+buildOppstilling();
 });
 
 buildTurnering("turneringKveldTable","turneringKveld");
@@ -848,10 +1075,9 @@ buildInndata();
 buildSporplan();
 buildOppstilling();
 initViewControls();
+updateBaliseStatus();
 activateTab("sporplan");
 markSaved("Klar");
 </script>
 </body>
 </html>
-
-Sendt fra Outlook for iOS
