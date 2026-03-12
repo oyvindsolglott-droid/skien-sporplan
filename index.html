@@ -258,7 +258,7 @@ h1{font-size:20px}
 <body>
 <div class="app">
 <h1>Skien sporplan</h1>
-<p class="sub">versjon 1.1</p>
+<p class="sub">versjon 1.2</p>
 
 <div class="ios-banner">Data legges inn i ark "Turnering Kveld" og "Turnering Natt"</div>
 
@@ -276,25 +276,8 @@ h1{font-size:20px}
 <button class="seg" type="button" data-tab="oppstilling">Oppstilling</button>
 </div>
 
-<section class="panel" id="oppstilling">
-<div class="note">Tider og tognummer er faste. Kolonne "enk/dobb" foreslås automatisk, men kan endres manuelt. "sett nr.1" hentes fra "Sett 1->spor", og "sett nr.2" fra "Sett 2->spor" i Turnering Kveld/Natt.</div>
-
-<div class="note">
-<strong>Kjøretøyimport</strong><br>
-Lim inn én linje per tog, for eksempel:<br>
-802=74-02<br>
-804=74-11, 74-35<br>
-852=70-14
-</div>
-
-<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px;">
-<textarea id="kjoretoyImport" style="width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;" placeholder="802=74-02&#10;803=74-02&#10;804=74-11, 74-35"></textarea>
-<div style="display:flex;gap:8px;flex-wrap:wrap;">
-<button type="button" id="importKjoretoyBtn">Importer kjøretøy</button>
-<button type="button" id="clearKjoretoyBtn">Tøm kjøretøy</button>
-</div>
-</div>
-
+<section class="panel active" id="sporplan">
+<div class="note">Tom slot viser nr. på sporplassering. Fylt slot blir grå. Hvis vask-raden er merket med ja/ja1/ja2 = <strong>ja</strong>, blir planlagt sporplassering grønn i stedet.</div>
 <div class="view-tools">
 <span class="label">Sporplan visning</span>
 <button class="compact zoom-out" data-target="yardZoom">Zoom ut</button>
@@ -360,6 +343,23 @@ Lim inn én linje per tog, for eksempel:<br>
 
 <section class="panel" id="oppstilling">
 <div class="note">Tider og tognummer er faste. Kolonne "enk/dobb" foreslås automatisk, men kan endres manuelt. "sett nr.1" hentes fra "Sett 1->spor", og "sett nr.2" fra "Sett 2->spor" i Turnering Kveld/Natt.</div>
+
+<div class="note">
+<strong>Kjøretøyimport</strong><br>
+Lim inn én linje per tog, for eksempel:<br>
+802=74-02<br>
+804=74-11, 74-35<br>
+852=70-14
+</div>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px;">
+<textarea id="kjoretoyImport" style="width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;" placeholder="802=74-02&#10;803=74-02&#10;804=74-11, 74-35"></textarea>
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
+<button type="button" id="importKjoretoyBtn">Importer kjøretøy</button>
+<button type="button" id="clearKjoretoyBtn">Tøm kjøretøy</button>
+</div>
+</div>
+
 <div class="view-tools">
 <span class="label">Oppstilling visning</span>
 <button class="compact zoom-out" data-target="oppstillingZoom">Zoom ut</button>
@@ -376,7 +376,7 @@ Lim inn én linje per tog, for eksempel:<br>
 </div>
 
 <script>
-const STORAGE_KEY="skien_sporplan_iphone_v4";
+const STORAGE_KEY="skien_sporplan_iphone_v5";
 
 const header={
 type:"header",
@@ -634,10 +634,7 @@ return lookup;
 
 function importKjoretoyFromText(raw){
 const lines=String(raw||"").split(/\r?\n/);
-
-if(!state.kjoretoy){
-state.kjoretoy={};
-}
+const map={...state.kjoretoy};
 
 lines.forEach(line=>{
 const s=line.trim();
@@ -650,20 +647,21 @@ const tog=normalizeTognr(parts[0]);
 const kjoretoy=parts.slice(1).join("=").trim();
 
 if(tog){
-state.kjoretoy[tog]=kjoretoy;
+map[tog]=kjoretoy;
 }
 });
 
+state.kjoretoy=map;
 persist(true);
 buildOppstilling();
 }
-  
+
 function buildOppstilling(){
 const lookup=computeOppstillingLookup();
 const table=document.getElementById("oppstillingTable");
 table.innerHTML="";
 const thead=document.createElement("thead");
-thead.innerHTML="<tr><th>avg. kl.</th><th>tognr.</th><th>enk/dobb</th><th>sett nr.1</th><th>sett nr.2</th></tr>";
+thead.innerHTML="<tr><th>avg. kl.</th><th>tognr.</th><th>Kjøretøy</th><th>enk/dobb</th><th>sett nr.1</th><th>sett nr.2</th></tr>";
 table.appendChild(thead);
 
 const body=document.createElement("tbody");
@@ -680,6 +678,10 @@ const tdTrain=document.createElement("td");
 tdTrain.textContent=row.train;
 if(row.togClass) tdTrain.className=row.togClass;
 tr.appendChild(tdTrain);
+
+const tdVehicle=document.createElement("td");
+tdVehicle.textContent=state.kjoretoy[row.train] || "";
+tr.appendChild(tdVehicle);
 
 const tdMode=document.createElement("td");
 const inp=document.createElement("input");
@@ -871,6 +873,7 @@ state={
 turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
 turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
 oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
+kjoretoy:{},
 views:{
 yardZoom:{scale:1,compact:false},
 kveldZoom:{scale:1,compact:false},
@@ -887,6 +890,18 @@ buildSporplan();
 buildOppstilling();
 initViewControls();
 activateTab("sporplan");
+});
+
+document.getElementById("importKjoretoyBtn").addEventListener("click",()=>{
+const raw=document.getElementById("kjoretoyImport").value;
+importKjoretoyFromText(raw);
+});
+
+document.getElementById("clearKjoretoyBtn").addEventListener("click",()=>{
+if(!confirm("Tømme alle kjøretøydata?")) return;
+state.kjoretoy={};
+persist(true);
+buildOppstilling();
 });
 
 buildTurnering("turneringKveldTable","turneringKveld");
