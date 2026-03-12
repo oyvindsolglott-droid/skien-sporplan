@@ -787,6 +787,61 @@ persist(true);
 buildOppstilling();
 }
 
+function getAllTursattRows(){
+  const fixedMap = Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r]));
+  const trains = new Set();
+
+  function addTrain(tog){
+    const t = normalizeTognr(tog);
+    if(!t) return;
+    if(t.toLowerCase() === "ikke tursatt") return;
+    trains.add(t);
+  }
+
+  getAllTursattRows().forEach(r => addTrain(r.train));
+  Object.keys(vehicleLookup).forEach(addTrain);
+  Object.keys(state.kjoretoy || {}).forEach(addTrain);
+  Object.keys(state.baliseLookup || {}).forEach(addTrain);
+
+  state.turneringKveld.forEach(r => {
+    if(!r.type) addTrain(r.b);
+  });
+  state.turneringNatt.forEach(r => {
+    if(!r.type) addTrain(r.b);
+  });
+
+  const rows = Array.from(trains).map(train => {
+    if(fixedMap[train]){
+      return {...fixedMap[train]};
+    }
+
+    return {
+      time: "",
+      train,
+      mode: "enk",
+      highlight: false,
+      togClass: "",
+      modeClass: "opp-greytext"
+    };
+  });
+
+  rows.sort((a,b) => {
+    const ta = a.time || "99:99";
+    const tb = b.time || "99:99";
+
+    if(ta !== tb) return ta.localeCompare(tb, "no");
+
+    const na = Number(a.train);
+    const nb = Number(b.train);
+
+    if(!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+
+    return String(a.train).localeCompare(String(b.train), "no");
+  });
+
+  return rows;
+}
+  
 function buildOppstilling(){
 const lookup=computeOppstillingLookup();
 const table=document.getElementById("oppstillingTable");
