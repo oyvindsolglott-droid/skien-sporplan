@@ -852,6 +852,17 @@ table.appendChild(thead);
 
 const body=document.createElement("tbody");
 
+function getAllTursattRows(){
+  const fixedMap = Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r]));
+  const trains = new Set();
+
+  function addTrain(tog){
+    const t = normalizeTognr(tog);
+    if(!t) return;
+    if(t.toLowerCase() === "ikke tursatt") return;
+    trains.add(t);
+  }
+  
 fixedOppstillingRows.forEach(row=>{
 const tr=document.createElement("tr");
 if(row.highlight) tr.classList.add("opp-yellow");
