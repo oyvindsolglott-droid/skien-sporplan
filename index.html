@@ -276,8 +276,25 @@ h1{font-size:20px}
 <button class="seg" type="button" data-tab="oppstilling">Oppstilling</button>
 </div>
 
-<section class="panel active" id="sporplan">
-<div class="note">Tom slot viser nr. på sporplassering. Fylt slot blir grå. Hvis vask-raden er merket med ja/ja1/ja2 = <strong>ja</strong>, blir planlagt sporplassering grønn i stedet.</div>
+<section class="panel" id="oppstilling">
+<div class="note">Tider og tognummer er faste. Kolonne "enk/dobb" foreslås automatisk, men kan endres manuelt. "sett nr.1" hentes fra "Sett 1->spor", og "sett nr.2" fra "Sett 2->spor" i Turnering Kveld/Natt.</div>
+
+<div class="note">
+<strong>Kjøretøyimport</strong><br>
+Lim inn én linje per tog, for eksempel:<br>
+802=74-02<br>
+804=74-11, 74-35<br>
+852=70-14
+</div>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px;">
+<textarea id="kjoretoyImport" style="width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;" placeholder="802=74-02&#10;803=74-02&#10;804=74-11, 74-35"></textarea>
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
+<button type="button" id="importKjoretoyBtn">Importer kjøretøy</button>
+<button type="button" id="clearKjoretoyBtn">Tøm kjøretøy</button>
+</div>
+</div>
+
 <div class="view-tools">
 <span class="label">Sporplan visning</span>
 <button class="compact zoom-out" data-target="yardZoom">Zoom ut</button>
@@ -440,6 +457,7 @@ state={
 turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
 turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
 oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
+kjoretoy:{},
 views:{
 yardZoom:{scale:1,compact:false},
 kveldZoom:{scale:1,compact:false},
@@ -460,6 +478,9 @@ oppstillingZoom:{scale:1,compact:false}
 }
 if(!state.oppstillingModes){
 state.oppstillingModes=Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode]));
+}
+if(!state.kjoretoy){
+state.kjoretoy={};
 }
 
 function markSaved(t){
