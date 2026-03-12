@@ -224,7 +224,7 @@ display:flex;
 align-items:center
 }
 
-/* Oppstilling */
+/* Tursatt */
 .opp-yellow td{background:#d6d62f !important}
 .opp-yellow td input{background:transparent}
 .opp-red{color:#c00000;font-weight:700}
@@ -353,7 +353,7 @@ h1{font-size:20px}
 </section>
 
 <section class="panel" id="oppstilling">
-<div class="note">Tursatte tog med faste tider og tognummer. ...
+<div class="note">Tursatte tog vises samlet her. Faste tog beholder forhåndsutfylt tid og forslag til enk/dobb. Andre kjente tog listes automatisk når de finnes i Balise-data, manuell kjøretøydata eller i Turnering Kveld/Natt.</div>
 
 <div class="note">
 <strong>Balise-import</strong><br>
@@ -788,60 +788,61 @@ buildOppstilling();
 }
 
 function getAllTursattRows(){
-  const fixedMap = Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r]));
-  const trains = new Set();
+const fixedMap = Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r]));
+const trains = new Set();
 
-  function addTrain(tog){
-    const t = normalizeTognr(tog);
-    if(!t) return;
-    if(t.toLowerCase() === "ikke tursatt") return;
-    trains.add(t);
-  }
-
-  getAllTursattRows().forEach(r => addTrain(r.train));
-  Object.keys(vehicleLookup).forEach(addTrain);
-  Object.keys(state.kjoretoy || {}).forEach(addTrain);
-  Object.keys(state.baliseLookup || {}).forEach(addTrain);
-
-  state.turneringKveld.forEach(r => {
-    if(!r.type) addTrain(r.b);
-  });
-  state.turneringNatt.forEach(r => {
-    if(!r.type) addTrain(r.b);
-  });
-
-  const rows = Array.from(trains).map(train => {
-    if(fixedMap[train]){
-      return {...fixedMap[train]};
-    }
-
-    return {
-      time: "",
-      train,
-      mode: "enk",
-      highlight: false,
-      togClass: "",
-      modeClass: "opp-greytext"
-    };
-  });
-
-  rows.sort((a,b) => {
-    const ta = a.time || "99:99";
-    const tb = b.time || "99:99";
-
-    if(ta !== tb) return ta.localeCompare(tb, "no");
-
-    const na = Number(a.train);
-    const nb = Number(b.train);
-
-    if(!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-
-    return String(a.train).localeCompare(String(b.train), "no");
-  });
-
-  return rows;
+function addTrain(tog){
+const t = normalizeTognr(tog);
+if(!t) return;
+if(t.toLowerCase() === "ikke tursatt") return;
+trains.add(t);
 }
-  
+
+fixedOppstillingRows.forEach(r => addTrain(r.train));
+Object.keys(vehicleLookup).forEach(addTrain);
+Object.keys(state.kjoretoy || {}).forEach(addTrain);
+Object.keys(state.baliseLookup || {}).forEach(addTrain);
+
+state.turneringKveld.forEach(r => {
+if(!r.type) addTrain(r.b);
+});
+
+state.turneringNatt.forEach(r => {
+if(!r.type) addTrain(r.b);
+});
+
+const rows = Array.from(trains).map(train => {
+if(fixedMap[train]){
+return {...fixedMap[train]};
+}
+
+return {
+time: "",
+train,
+mode: "enk",
+highlight: false,
+togClass: "",
+modeClass: "opp-greytext"
+};
+});
+
+rows.sort((a,b) => {
+const ta = a.time || "99:99";
+const tb = b.time || "99:99";
+
+if(ta !== tb) return ta.localeCompare(tb, "no");
+
+const na = Number(a.train);
+const nb = Number(b.train);
+
+if(!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+
+return String(a.train).localeCompare(String(b.train), "no");
+});
+
+return rows;
+}
+
 function buildOppstilling(){
 const lookup=computeOppstillingLookup();
 const table=document.getElementById("oppstillingTable");
@@ -852,23 +853,12 @@ table.appendChild(thead);
 
 const body=document.createElement("tbody");
 
-function getAllTursattRows(){
-  const fixedMap = Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r]));
-  const trains = new Set();
-
-  function addTrain(tog){
-    const t = normalizeTognr(tog);
-    if(!t) return;
-    if(t.toLowerCase() === "ikke tursatt") return;
-    trains.add(t);
-  }
-  
-fixedOppstillingRows.forEach(row=>{
+getAllTursattRows().forEach(row=>{
 const tr=document.createElement("tr");
 if(row.highlight) tr.classList.add("opp-yellow");
 
 const tdTime=document.createElement("td");
-tdTime.textContent=row.time;
+tdTime.textContent=row.time || "";
 tr.appendChild(tdTime);
 
 const tdTrain=document.createElement("td");
@@ -887,7 +877,7 @@ inp.inputMode="text";
 inp.autocapitalize="off";
 inp.autocorrect="off";
 inp.spellcheck=false;
-inp.value=state.oppstillingModes[row.train] || row.mode;
+inp.value=state.oppstillingModes[row.train] || row.mode || "enk";
 if(row.modeClass) inp.classList.add(row.modeClass);
 inp.addEventListener("input",e=>{
 state.oppstillingModes[row.train]=e.target.value;
