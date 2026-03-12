@@ -867,7 +867,8 @@ if(row.togClass) tdTrain.className=row.togClass;
 tr.appendChild(tdTrain);
 
 const tdVehicle=document.createElement("td");
-tdVehicle.textContent=getVehicleForTrain(row.train);
+const vehicleValue=getVehicleForTrain(row.train);
+tdVehicle.textContent=vehicleValue || "Ikke Tursatt";
 tr.appendChild(tdVehicle);
 
 const tdMode=document.createElement("td");
