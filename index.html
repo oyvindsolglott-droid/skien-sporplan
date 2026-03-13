@@ -241,6 +241,20 @@ background:#fff;
 font:inherit;
 }
 
+.balise-toggle-bar{
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+align-items:center;
+margin-bottom:12px;
+}
+
+.balise-toggle-bar button.active{
+background:#dfefff;
+border-color:#9ec5ff;
+font-weight:700;
+}
+
 @media (max-width:1100px){
 .segmented{grid-template-columns:1fr 1fr 1fr}
 }
@@ -269,9 +283,9 @@ h1{font-size:20px}
 <body>
 <div class="app">
 <h1>Skien sporplan</h1>
-<p class="sub">versjon 3.1.1</p>
+<p class="sub">versjon 3.1.4 / tråd 1.34</p>
 
-<div class="ios-banner">Data legges inn i ark "Turnering Kveld" og "Turnering Natt"</div>
+<div class="ios-banner">Data legges inn i ark "Turnering Kveld" og "Turnering Natt". Balise kan lastes separat for i dag og i morgen.</div>
 
 <div class="toolbar">
 <button id="saveBtn" type="button">Lagre</button>
@@ -353,17 +367,23 @@ h1{font-size:20px}
 </section>
 
 <section class="panel" id="oppstilling">
-<div class="note">Tursatte tog vises samlet her. Faste tog beholder forhåndsutfylt tid og forslag til enk/dobb. Andre kjente tog listes automatisk når de finnes i Balise-data, manuell kjøretøydata eller i Turnering Kveld/Natt.</div>
+<div class="note">Tursatte tog vises samlet her. Fast reserveoppslag for 8xx beholdes. Balise-data for valgt døgn overstyrer bare når verdien er gyldig. Hvis Balise har ❌, faller appen tilbake til reservegrunnlaget.</div>
+
+<div class="balise-toggle-bar">
+<button type="button" id="showTodayBtn" class="active">Vis Balise i dag</button>
+<button type="button" id="showTomorrowBtn">Vis Balise i morgen</button>
+<span id="baliseViewState" class="save-indicator">Viser: i dag</span>
+</div>
 
 <div class="note">
 <strong>Balise-import</strong><br>
-Velg JSON-fila du laget fra Balise, og trykk på knappen under.
+Velg JSON-fila du laget fra Balise for enten <strong>idag</strong> eller <strong>imorgen</strong>, og trykk på knappen under. Appen kjenner selv igjen hvilken fil det er.
 </div>
 
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
 <input class="file-input" type="file" id="baliseJsonFile" accept=".json">
 <button type="button" id="importBaliseJsonBtn">Last inn Balise-JSON</button>
-<button type="button" id="clearBaliseJsonBtn">Tøm Balise-data</button>
+<button type="button" id="clearBaliseJsonBtn">Tøm valgt Balise-data</button>
 <span id="baliseStatus" class="save-indicator">Ingen Balise-fil lastet inn</span>
 </div>
 
@@ -399,7 +419,7 @@ Skriv bare ett tognummer per linje hvis du vil fylle fra reserveoppslag:
 </div>
 
 <script>
-const STORAGE_KEY="skien_sporplan_iphone_v7";
+const STORAGE_KEY="skien_sporplan_iphone_v9";
 
 const vehicleLookup = {
 "802":"74-02",
@@ -531,15 +551,17 @@ const topRow=["12N","11N","10N","9","8N","7N","platform","6N","5N","4N","3N","pl
 const midRow=["12S","11S","10S",null,"8S","7S","platform","6S","5M","4M","3M","platform","2S","1S"];
 const botRow=[null,null,null,null,"8SS","7SS","platform","6SS","5S","4S","3S",null,null,null];
 
-let state=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
-if(!state){
-state={
+function makeDefaultState(){
+return {
 turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
 turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
 oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
 kjoretoy:{},
-baliseLookup:{},
-baliseMeta:null,
+baliseToday:{},
+baliseTomorrow:{},
+baliseMetaToday:null,
+baliseMetaTomorrow:null,
+baliseSelectedMode:"idag",
 views:{
 yardZoom:{scale:1,compact:false},
 kveldZoom:{scale:1,compact:false},
@@ -549,6 +571,21 @@ oppstillingZoom:{scale:1,compact:false}
 }
 };
 }
+
+let state=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
+if(!state){
+state=makeDefaultState();
+}
+
+if(!state.turneringKveld) state.turneringKveld=JSON.parse(JSON.stringify(initialKveldRows));
+if(!state.turneringNatt) state.turneringNatt=JSON.parse(JSON.stringify(initialNattRows));
+if(!state.oppstillingModes) state.oppstillingModes=Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode]));
+if(!state.kjoretoy) state.kjoretoy={};
+if(!state.baliseToday) state.baliseToday={};
+if(!state.baliseTomorrow) state.baliseTomorrow={};
+if(!("baliseMetaToday" in state)) state.baliseMetaToday=null;
+if(!("baliseMetaTomorrow" in state)) state.baliseMetaTomorrow=null;
+if(!state.baliseSelectedMode) state.baliseSelectedMode="idag";
 if(!state.views){
 state.views={
 yardZoom:{scale:1,compact:false},
@@ -557,18 +594,6 @@ nattZoom:{scale:1,compact:false},
 inndataZoom:{scale:1,compact:false},
 oppstillingZoom:{scale:1,compact:false}
 };
-}
-if(!state.oppstillingModes){
-state.oppstillingModes=Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode]));
-}
-if(!state.kjoretoy){
-state.kjoretoy={};
-}
-if(!state.baliseLookup){
-state.baliseLookup={};
-}
-if(!state.baliseMeta){
-state.baliseMeta=null;
 }
 
 function markSaved(t){
@@ -583,65 +608,122 @@ function normalizeTognr(v){
 return String(v||"").trim();
 }
 
+function isInvalidVehicleValue(v){
+const s = String(v || "").trim();
+return !s || s === "❌" || s === "-" || s.toLowerCase() === "ukjent";
+}
+
+function sanitizeVehicleValue(v){
+const s = String(v || "").trim();
+return isInvalidVehicleValue(s) ? "" : s;
+}
+
 function persist(auto=false){
 localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
 markSaved(auto?"Lagret automatisk":"Lagret");
 }
 
+function getSelectedBaliseMap(){
+return state.baliseSelectedMode === "imorgen"
+? (state.baliseTomorrow || {})
+: (state.baliseToday || {});
+}
+
 function getVehicleForTrain(tog){
-const train=normalizeTognr(tog);
-return state.baliseLookup[train] || state.kjoretoy[train] || vehicleLookup[train] || "";
+const train = normalizeTognr(tog);
+
+const baliseValue = sanitizeVehicleValue(getSelectedBaliseMap()[train]);
+if(baliseValue) return baliseValue;
+
+const manualValue = sanitizeVehicleValue(state.kjoretoy[train]);
+if(manualValue) return manualValue;
+
+const staticValue = sanitizeVehicleValue(vehicleLookup[train]);
+if(staticValue) return staticValue;
+
+return "";
+}
+
+function updateBaliseViewButtons(){
+const todayBtn = document.getElementById("showTodayBtn");
+const tomorrowBtn = document.getElementById("showTomorrowBtn");
+
+todayBtn.classList.toggle("active", state.baliseSelectedMode === "idag");
+tomorrowBtn.classList.toggle("active", state.baliseSelectedMode === "imorgen");
+}
+
+function updateBaliseViewState(){
+const el = document.getElementById("baliseViewState");
+if(!el) return;
+el.textContent = `Viser: ${state.baliseSelectedMode === "imorgen" ? "i morgen" : "i dag"}`;
+updateBaliseViewButtons();
 }
 
 function updateBaliseStatus(){
 const el=document.getElementById("baliseStatus");
 if(!el) return;
 
-if(state.baliseMeta && state.baliseMeta.date){
-const src = state.baliseMeta.source ? ` (${state.baliseMeta.source})` : "";
-el.textContent = `Balise lastet: ${state.baliseMeta.date}${src}`;
-}else if(Object.keys(state.baliseLookup || {}).length){
-el.textContent = "Balise-data lastet";
+const meta = state.baliseSelectedMode === "imorgen"
+? state.baliseMetaTomorrow
+: state.baliseMetaToday;
+
+const map = state.baliseSelectedMode === "imorgen"
+? (state.baliseTomorrow || {})
+: (state.baliseToday || {});
+
+const count = Object.values(map).filter(v => sanitizeVehicleValue(v)).length;
+
+if(meta && meta.date){
+const src = meta.source ? ` (${meta.source})` : "";
+el.textContent = `Balise ${meta.mode}: ${meta.date}${src}, ${count} tog`;
 }else{
-el.textContent = "Ingen Balise-fil lastet inn";
+el.textContent = `Ingen Balise-fil lastet inn for ${state.baliseSelectedMode}`;
 }
 }
 
 function importBaliseJsonObject(payload){
-let vehicles = {};
-let meta = null;
-
-if(payload && typeof payload === "object" && payload.vehicles && typeof payload.vehicles === "object"){
-vehicles = payload.vehicles;
-meta = {
-source: payload.source || "balise.no",
-date: payload.date || "",
-generated_at: payload.generated_at || ""
-};
-}else if(payload && typeof payload === "object"){
-vehicles = payload;
-meta = {
-source: "ukjent",
-date: "",
-generated_at: ""
-};
-}else{
+if(!payload || typeof payload !== "object"){
 throw new Error("Ugyldig JSON-format");
+}
+
+const vehicles = payload.vehicles;
+if(!vehicles || typeof vehicles !== "object"){
+throw new Error("JSON-fila mangler gyldig 'vehicles'-mapping.");
+}
+
+const mode = String(payload.mode || "").trim().toLowerCase();
+const date = String(payload.date || "").trim();
+
+if(mode !== "idag" && mode !== "imorgen"){
+throw new Error("JSON-fila mangler gyldig mode ('idag' eller 'imorgen').");
 }
 
 const cleaned = {};
 Object.entries(vehicles).forEach(([key,val])=>{
 const tog = normalizeTognr(key);
 if(!tog) return;
-cleaned[tog] = String(val || "").trim();
+cleaned[tog] = sanitizeVehicleValue(val);
 });
 
-state.baliseLookup = cleaned;
-state.baliseMeta = meta;
+const meta = {
+source: payload.source || "balise.no",
+mode,
+date,
+generated_at: payload.generated_at || ""
+};
+
+if(mode === "idag"){
+state.baliseToday = cleaned;
+state.baliseMetaToday = meta;
+}else{
+state.baliseTomorrow = cleaned;
+state.baliseMetaTomorrow = meta;
+}
 
 persist(true);
 buildOppstilling();
 updateBaliseStatus();
+updateBaliseViewState();
 }
 
 function parseWashCommand(v){
@@ -783,7 +865,10 @@ const map={...state.kjoretoy};
 lines.forEach(line=>{
 const tog=normalizeTognr(line);
 if(!tog) return;
-map[tog]=getVehicleForTrain(tog);
+
+const baliseCurrent = sanitizeVehicleValue(getSelectedBaliseMap()[tog]);
+const staticValue = sanitizeVehicleValue(vehicleLookup[tog]);
+map[tog]= baliseCurrent || staticValue || "";
 });
 
 state.kjoretoy=map;
@@ -805,7 +890,8 @@ trains.add(t);
 fixedOppstillingRows.forEach(r => addTrain(r.train));
 Object.keys(vehicleLookup).forEach(addTrain);
 Object.keys(state.kjoretoy || {}).forEach(addTrain);
-Object.keys(state.baliseLookup || {}).forEach(addTrain);
+Object.keys(state.baliseToday || {}).forEach(addTrain);
+Object.keys(state.baliseTomorrow || {}).forEach(addTrain);
 
 state.turneringKveld.forEach(r => {
 if(!r.type) addTrain(r.b);
@@ -1061,21 +1147,7 @@ document.getElementById("saveBtn").addEventListener("click",()=>persist(false));
 
 document.getElementById("resetBtn").addEventListener("click",()=>{
 if(!confirm("Nullstille hele appen?")) return;
-state={
-turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
-turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
-oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
-kjoretoy:{},
-baliseLookup:{},
-baliseMeta:null,
-views:{
-yardZoom:{scale:1,compact:false},
-kveldZoom:{scale:1,compact:false},
-nattZoom:{scale:1,compact:false},
-inndataZoom:{scale:1,compact:false},
-oppstillingZoom:{scale:1,compact:false}
-}
-};
+state=makeDefaultState();
 persist(false);
 buildTurnering("turneringKveldTable","turneringKveld");
 buildTurnering("turneringNattTable","turneringNatt");
@@ -1084,7 +1156,24 @@ buildSporplan();
 buildOppstilling();
 initViewControls();
 updateBaliseStatus();
+updateBaliseViewState();
 activateTab("sporplan");
+});
+
+document.getElementById("showTodayBtn").addEventListener("click", ()=>{
+state.baliseSelectedMode = "idag";
+persist(true);
+buildOppstilling();
+updateBaliseStatus();
+updateBaliseViewState();
+});
+
+document.getElementById("showTomorrowBtn").addEventListener("click", ()=>{
+state.baliseSelectedMode = "imorgen";
+persist(true);
+buildOppstilling();
+updateBaliseStatus();
+updateBaliseViewState();
 });
 
 document.getElementById("importBaliseJsonBtn").addEventListener("click",()=>{
@@ -1101,7 +1190,7 @@ reader.onload=()=>{
 try{
 const payload=JSON.parse(reader.result);
 importBaliseJsonObject(payload);
-alert("Balise-JSON lastet inn.");
+alert(`Balise-JSON lastet inn for ${payload.mode || "ukjent modus"}.`);
 }catch(err){
 alert("Klarte ikke å lese JSON-fil: " + err.message);
 }
@@ -1110,12 +1199,20 @@ reader.readAsText(file,"utf-8");
 });
 
 document.getElementById("clearBaliseJsonBtn").addEventListener("click",()=>{
-if(!confirm("Tømme innlest Balise-data?")) return;
-state.baliseLookup={};
-state.baliseMeta=null;
+if(!confirm("Tømme innlest Balise-data for valgt visning?")) return;
+
+if(state.baliseSelectedMode === "imorgen"){
+state.baliseTomorrow = {};
+state.baliseMetaTomorrow = null;
+}else{
+state.baliseToday = {};
+state.baliseMetaToday = null;
+}
+
 persist(true);
 buildOppstilling();
 updateBaliseStatus();
+updateBaliseViewState();
 });
 
 document.getElementById("importKjoretoyBtn").addEventListener("click",()=>{
@@ -1137,6 +1234,7 @@ buildSporplan();
 buildOppstilling();
 initViewControls();
 updateBaliseStatus();
+updateBaliseViewState();
 activateTab("sporplan");
 markSaved("Klar");
 </script>
