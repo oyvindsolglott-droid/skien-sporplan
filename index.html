@@ -223,14 +223,11 @@ margin-left:4px;
 display:flex;
 align-items:center
 }
-
-/* Tursatt */
 .opp-yellow td{background:#d6d62f !important}
 .opp-yellow td input{background:transparent}
 .opp-red{color:#c00000;font-weight:700}
 .opp-greytext{color:#bdbdbd;font-weight:600}
 .opp-bold{font-weight:700}
-
 .file-input{
 width:100%;
 max-width:420px;
@@ -240,7 +237,6 @@ padding:10px;
 background:#fff;
 font:inherit;
 }
-
 .balise-toggle-bar{
 display:flex;
 gap:8px;
@@ -248,13 +244,11 @@ flex-wrap:wrap;
 align-items:center;
 margin-bottom:12px;
 }
-
 .balise-toggle-bar button.active{
 background:#dfefff;
 border-color:#9ec5ff;
 font-weight:700;
 }
-
 @media (max-width:1100px){
 .segmented{grid-template-columns:1fr 1fr 1fr}
 }
@@ -283,9 +277,9 @@ h1{font-size:20px}
 <body>
 <div class="app">
 <h1>Skien sporplan</h1>
-<p class="sub">versjon 3.1.5 / tråd 1.34</p>
+<p class="sub">versjon 3.1.6 / tråd 1.34</p>
 
-<div class="ios-banner">Data legges inn i ark "Turnering Kveld" og "Turnering Natt". Balise kan lastes separat for i dag og i morgen.</div>
+<div class="ios-banner">Data legges inn i ark "Turnering Kveld" og "Turnering Natt". Last helst inn datostemplet Balise-JSON når du vil ha klokkeslett i Tursatt.</div>
 
 <div class="toolbar">
 <button id="saveBtn" type="button">Lagre</button>
@@ -367,7 +361,7 @@ h1{font-size:20px}
 </section>
 
 <section class="panel" id="oppstilling">
-<div class="note">Tursatte tog vises samlet her. Fast reserveoppslag for 8xx beholdes i normal bruk. Ved <strong>Nullstill</strong> slettes all kjøretøydata, men tognumrene blir stående.</div>
+<div class="note">Tursatte tog vises samlet her. Fast reserveoppslag for 8xx beholdes i normal bruk. Ved <strong>Nullstill</strong> slettes kjøretøydata, men tognumrene blir stående. Last inn <strong>datostemplet Balise-JSON</strong> hvis du vil ha klokkeslett fra Balise i Tursatt.</div>
 
 <div class="balise-toggle-bar">
 <button type="button" id="showTodayBtn" class="active">Vis Balise i dag</button>
@@ -377,7 +371,7 @@ h1{font-size:20px}
 
 <div class="note">
 <strong>Balise-import</strong><br>
-Velg JSON-fila du laget fra Balise for enten <strong>idag</strong> eller <strong>imorgen</strong>, og trykk på knappen under. Appen kjenner selv igjen hvilken fil det er.
+Velg helst fila av typen <strong>skien_balise_YYYY-MM-DD.json</strong> for å få både kjøretøy og klokkeslett. Fila <strong>balise_vehicles.json</strong> virker også, men den har bare kjøretøy.
 </div>
 
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
@@ -419,7 +413,7 @@ Skriv bare ett tognummer per linje hvis du vil fylle fra reserveoppslag:
 </div>
 
 <script>
-const STORAGE_KEY="skien_sporplan_iphone_v10";
+const STORAGE_KEY="skien_sporplan_iphone_v11";
 
 const vehicleLookup = {
 "802":"74-02",
@@ -552,31 +546,31 @@ const midRow=["12S","11S","10S",null,"8S","7S","platform","6S","5M","4M","3M","p
 const botRow=[null,null,null,null,"8SS","7SS","platform","6SS","5S","4S","3S",null,null,null];
 
 function makeDefaultState(){
-return {
-turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
-turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
-oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
-kjoretoy:{},
-baliseToday:{},
-baliseTomorrow:{},
-baliseMetaToday:null,
-baliseMetaTomorrow:null,
-baliseSelectedMode:"idag",
-useStaticVehicleLookup:true,
-views:{
-yardZoom:{scale:1,compact:false},
-kveldZoom:{scale:1,compact:false},
-nattZoom:{scale:1,compact:false},
-inndataZoom:{scale:1,compact:false},
-oppstillingZoom:{scale:1,compact:false}
-}
-};
+  return {
+    turneringKveld:JSON.parse(JSON.stringify(initialKveldRows)),
+    turneringNatt:JSON.parse(JSON.stringify(initialNattRows)),
+    oppstillingModes:Object.fromEntries(fixedOppstillingRows.map(r=>[r.train,r.mode])),
+    kjoretoy:{},
+    baliseToday:{},
+    baliseTomorrow:{},
+    baliseTodayDepartures:{},
+    baliseTomorrowDepartures:{},
+    baliseMetaToday:null,
+    baliseMetaTomorrow:null,
+    baliseSelectedMode:"idag",
+    useStaticVehicleLookup:true,
+    views:{
+      yardZoom:{scale:1,compact:false},
+      kveldZoom:{scale:1,compact:false},
+      nattZoom:{scale:1,compact:false},
+      inndataZoom:{scale:1,compact:false},
+      oppstillingZoom:{scale:1,compact:false}
+    }
+  };
 }
 
 let state=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
-if(!state){
-state=makeDefaultState();
-}
+if(!state) state=makeDefaultState();
 
 if(!state.turneringKveld) state.turneringKveld=JSON.parse(JSON.stringify(initialKveldRows));
 if(!state.turneringNatt) state.turneringNatt=JSON.parse(JSON.stringify(initialNattRows));
@@ -584,656 +578,685 @@ if(!state.oppstillingModes) state.oppstillingModes=Object.fromEntries(fixedOppst
 if(!state.kjoretoy) state.kjoretoy={};
 if(!state.baliseToday) state.baliseToday={};
 if(!state.baliseTomorrow) state.baliseTomorrow={};
+if(!state.baliseTodayDepartures) state.baliseTodayDepartures={};
+if(!state.baliseTomorrowDepartures) state.baliseTomorrowDepartures={};
 if(!("baliseMetaToday" in state)) state.baliseMetaToday=null;
 if(!("baliseMetaTomorrow" in state)) state.baliseMetaTomorrow=null;
 if(!state.baliseSelectedMode) state.baliseSelectedMode="idag";
 if(!("useStaticVehicleLookup" in state)) state.useStaticVehicleLookup=true;
 if(!state.views){
-state.views={
-yardZoom:{scale:1,compact:false},
-kveldZoom:{scale:1,compact:false},
-nattZoom:{scale:1,compact:false},
-inndataZoom:{scale:1,compact:false},
-oppstillingZoom:{scale:1,compact:false}
-};
+  state.views={
+    yardZoom:{scale:1,compact:false},
+    kveldZoom:{scale:1,compact:false},
+    nattZoom:{scale:1,compact:false},
+    inndataZoom:{scale:1,compact:false},
+    oppstillingZoom:{scale:1,compact:false}
+  };
 }
 
 function markSaved(t){
-document.getElementById("saveStateText").textContent=t;
+  document.getElementById("saveStateText").textContent=t;
 }
 
 function normalizeSlot(v){
-return String(v||"").toUpperCase().replace(/\s+/g,"");
+  return String(v||"").toUpperCase().replace(/\s+/g,"");
 }
 
 function normalizeTognr(v){
-return String(v||"").trim();
+  return String(v||"").trim();
 }
 
 function isInvalidVehicleValue(v){
-const s = String(v || "").trim();
-return !s || s === "❌" || s === "-" || s.toLowerCase() === "ukjent";
+  const s = String(v || "").trim();
+  return !s || s === "❌" || s === "-" || s.toLowerCase() === "ukjent";
 }
 
 function sanitizeVehicleValue(v){
-const s = String(v || "").trim();
-return isInvalidVehicleValue(s) ? "" : s;
+  const s = String(v || "").trim();
+  return isInvalidVehicleValue(s) ? "" : s;
 }
 
 function persist(auto=false){
-localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
-markSaved(auto?"Lagret automatisk":"Lagret");
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  markSaved(auto?"Lagret automatisk":"Lagret");
 }
 
 function getSelectedBaliseMap(){
-return state.baliseSelectedMode === "imorgen"
-? (state.baliseTomorrow || {})
-: (state.baliseToday || {});
+  return state.baliseSelectedMode === "imorgen"
+    ? (state.baliseTomorrow || {})
+    : (state.baliseToday || {});
+}
+
+function getSelectedDepartureMap(){
+  return state.baliseSelectedMode === "imorgen"
+    ? (state.baliseTomorrowDepartures || {})
+    : (state.baliseTodayDepartures || {});
 }
 
 function getVehicleForTrain(tog){
-const train = normalizeTognr(tog);
+  const train = normalizeTognr(tog);
 
-const baliseValue = sanitizeVehicleValue(getSelectedBaliseMap()[train]);
-if(baliseValue) return baliseValue;
+  const baliseValue = sanitizeVehicleValue(getSelectedBaliseMap()[train]);
+  if(baliseValue) return baliseValue;
 
-const manualValue = sanitizeVehicleValue(state.kjoretoy[train]);
-if(manualValue) return manualValue;
+  const manualValue = sanitizeVehicleValue(state.kjoretoy[train]);
+  if(manualValue) return manualValue;
 
-if(state.useStaticVehicleLookup){
-const staticValue = sanitizeVehicleValue(vehicleLookup[train]);
-if(staticValue) return staticValue;
-}
+  if(state.useStaticVehicleLookup){
+    const staticValue = sanitizeVehicleValue(vehicleLookup[train]);
+    if(staticValue) return staticValue;
+  }
 
-return "";
+  return "";
 }
 
 function updateBaliseViewButtons(){
-const todayBtn = document.getElementById("showTodayBtn");
-const tomorrowBtn = document.getElementById("showTomorrowBtn");
-
-todayBtn.classList.toggle("active", state.baliseSelectedMode === "idag");
-tomorrowBtn.classList.toggle("active", state.baliseSelectedMode === "imorgen");
+  const todayBtn = document.getElementById("showTodayBtn");
+  const tomorrowBtn = document.getElementById("showTomorrowBtn");
+  todayBtn.classList.toggle("active", state.baliseSelectedMode === "idag");
+  tomorrowBtn.classList.toggle("active", state.baliseSelectedMode === "imorgen");
 }
 
 function updateBaliseViewState(){
-const el = document.getElementById("baliseViewState");
-if(!el) return;
-el.textContent = `Viser: ${state.baliseSelectedMode === "imorgen" ? "i morgen" : "i dag"}`;
-updateBaliseViewButtons();
+  const el = document.getElementById("baliseViewState");
+  if(!el) return;
+  el.textContent = `Viser: ${state.baliseSelectedMode === "imorgen" ? "i morgen" : "i dag"}`;
+  updateBaliseViewButtons();
 }
 
 function updateBaliseStatus(){
-const el=document.getElementById("baliseStatus");
-if(!el) return;
+  const el=document.getElementById("baliseStatus");
+  if(!el) return;
 
-const meta = state.baliseSelectedMode === "imorgen"
-? state.baliseMetaTomorrow
-: state.baliseMetaToday;
+  const meta = state.baliseSelectedMode === "imorgen"
+    ? state.baliseMetaTomorrow
+    : state.baliseMetaToday;
 
-const map = state.baliseSelectedMode === "imorgen"
-? (state.baliseTomorrow || {})
-: (state.baliseToday || {});
+  const map = getSelectedBaliseMap();
+  const departures = getSelectedDepartureMap();
+  const count = Object.values(map).filter(v => sanitizeVehicleValue(v)).length;
+  const depCount = Object.keys(departures).length;
 
-const count = Object.values(map).filter(v => sanitizeVehicleValue(v)).length;
-
-if(meta && meta.date){
-const src = meta.source ? ` (${meta.source})` : "";
-el.textContent = `Balise ${meta.mode}: ${meta.date}${src}, ${count} tog`;
-}else{
-el.textContent = `Ingen Balise-fil lastet inn for ${state.baliseSelectedMode}`;
+  if(meta && meta.date){
+    const src = meta.source ? ` (${meta.source})` : "";
+    el.textContent = `Balise ${meta.mode}: ${meta.date}${src}, ${count} kjøretøy, ${depCount} avganger`;
+  }else{
+    el.textContent = `Ingen Balise-fil lastet inn for ${state.baliseSelectedMode}`;
+  }
 }
+
+function buildDepartureMapFromPayload(payload){
+  const map = {};
+  const departures = Array.isArray(payload?.departures) ? payload.departures : [];
+
+  departures.forEach(dep=>{
+    const tog = normalizeTognr(dep.train_no);
+    const time = String(dep.time || "").trim();
+    if(tog && time && !map[tog]){
+      map[tog] = time;
+    }
+  });
+
+  return map;
 }
 
 function importBaliseJsonObject(payload){
-if(!payload || typeof payload !== "object"){
-throw new Error("Ugyldig JSON-format");
-}
+  if(!payload || typeof payload !== "object"){
+    throw new Error("Ugyldig JSON-format");
+  }
 
-const vehicles = payload.vehicles;
-if(!vehicles || typeof vehicles !== "object"){
-throw new Error("JSON-fila mangler gyldig 'vehicles'-mapping.");
-}
+  const vehicles = payload.vehicles;
+  if(!vehicles || typeof vehicles !== "object"){
+    throw new Error("JSON-fila mangler gyldig 'vehicles'-mapping.");
+  }
 
-const mode = String(payload.mode || "").trim().toLowerCase();
-const date = String(payload.date || "").trim();
+  const mode = String(payload.mode || state.baliseSelectedMode || "").trim().toLowerCase();
+  const date = String(payload.date || "").trim();
 
-if(mode !== "idag" && mode !== "imorgen"){
-throw new Error("JSON-fila mangler gyldig mode ('idag' eller 'imorgen').");
-}
+  if(mode !== "idag" && mode !== "imorgen"){
+    throw new Error("JSON-fila mangler gyldig mode ('idag' eller 'imorgen').");
+  }
 
-const cleaned = {};
-Object.entries(vehicles).forEach(([key,val])=>{
-const tog = normalizeTognr(key);
-if(!tog) return;
-cleaned[tog] = sanitizeVehicleValue(val);
-});
+  const cleanedVehicles = {};
+  Object.entries(vehicles).forEach(([key,val])=>{
+    const tog = normalizeTognr(key);
+    if(!tog) return;
+    cleanedVehicles[tog] = sanitizeVehicleValue(val);
+  });
 
-const meta = {
-source: payload.source || "balise.no",
-mode,
-date,
-generated_at: payload.generated_at || ""
-};
+  const departureMap = buildDepartureMapFromPayload(payload);
 
-if(mode === "idag"){
-state.baliseToday = cleaned;
-state.baliseMetaToday = meta;
-}else{
-state.baliseTomorrow = cleaned;
-state.baliseMetaTomorrow = meta;
-}
+  const meta = {
+    source: payload.source || "balise.no",
+    mode,
+    date,
+    generated_at: payload.generated_at || "",
+    hasDepartures: Object.keys(departureMap).length > 0
+  };
 
-state.useStaticVehicleLookup = true;
+  if(mode === "idag"){
+    state.baliseToday = cleanedVehicles;
+    state.baliseTodayDepartures = departureMap;
+    state.baliseMetaToday = meta;
+  }else{
+    state.baliseTomorrow = cleanedVehicles;
+    state.baliseTomorrowDepartures = departureMap;
+    state.baliseMetaTomorrow = meta;
+  }
 
-persist(true);
-buildOppstilling();
-updateBaliseStatus();
-updateBaliseViewState();
+  state.useStaticVehicleLookup = true;
+  persist(true);
+  buildOppstilling();
+  updateBaliseStatus();
+  updateBaliseViewState();
 }
 
 function parseWashCommand(v){
-const s=String(v||"").trim().toLowerCase();
-return {
-set1: s==="ja" || s==="ja1",
-set2: s==="ja" || s==="ja2"
-};
+  const s=String(v||"").trim().toLowerCase();
+  return {
+    set1: s==="ja" || s==="ja1",
+    set2: s==="ja" || s==="ja2"
+  };
 }
 
 function mergeRowsIntoResult(rows,result,map){
-rows.forEach(row=>{
-if(row.type) return;
+  rows.forEach(row=>{
+    if(row.type) return;
 
-const tog=String(row.b||"").trim();
-const wash=parseWashCommand(row.e);
+    const tog=String(row.b||"").trim();
+    const wash=parseWashCommand(row.e);
 
-const mat1=String(row.c||"").trim();
-const spor1=normalizeSlot(row.f);
-if(mat1&&spor1&&map[spor1]!==undefined){
-result[map[spor1]].tog=tog;
-result[map[spor1]].mat=mat1;
-result[map[spor1]].wash=wash.set1;
-}
+    const mat1=String(row.c||"").trim();
+    const spor1=normalizeSlot(row.f);
+    if(mat1&&spor1&&map[spor1]!==undefined){
+      result[map[spor1]].tog=tog;
+      result[map[spor1]].mat=mat1;
+      result[map[spor1]].wash=wash.set1;
+    }
 
-const mat2=String(row.d||"").trim();
-const spor2=normalizeSlot(row.h);
-if(mat2&&spor2&&map[spor2]!==undefined){
-result[map[spor2]].tog=tog;
-result[map[spor2]].mat=mat2;
-result[map[spor2]].wash=wash.set2;
-}
-});
+    const mat2=String(row.d||"").trim();
+    const spor2=normalizeSlot(row.h);
+    if(mat2&&spor2&&map[spor2]!==undefined){
+      result[map[spor2]].tog=tog;
+      result[map[spor2]].mat=mat2;
+      result[map[spor2]].wash=wash.set2;
+    }
+  });
 }
 
 function computeInndata(){
-const result=inputSlots.map(slot=>({slot,tog:"",mat:"",wash:false}));
-const map=Object.fromEntries(result.map((r,i)=>[r.slot,i]));
-mergeRowsIntoResult(state.turneringKveld,result,map);
-mergeRowsIntoResult(state.turneringNatt,result,map);
-return result;
+  const result=inputSlots.map(slot=>({slot,tog:"",mat:"",wash:false}));
+  const map=Object.fromEntries(result.map((r,i)=>[r.slot,i]));
+  mergeRowsIntoResult(state.turneringKveld,result,map);
+  mergeRowsIntoResult(state.turneringNatt,result,map);
+  return result;
 }
 
 function buildTurnering(tableId,key){
-const cols=["a","b","c","d","e","f","g","h","i"];
-const table=document.getElementById(tableId);
-table.innerHTML="";
-const body=document.createElement("tbody");
+  const cols=["a","b","c","d","e","f","g","h","i"];
+  const table=document.getElementById(tableId);
+  table.innerHTML="";
+  const body=document.createElement("tbody");
 
-state[key].forEach((row,ri)=>{
-const tr=document.createElement("tr");
+  state[key].forEach((row,ri)=>{
+    const tr=document.createElement("tr");
 
-if(row.type==="header"){
-cols.forEach((k,idx)=>{
-const th=document.createElement("th");
-th.textContent=row[k]||"";
-if(idx===4) th.classList.add("wash-col");
-tr.appendChild(th);
-});
-}else if(row.type==="section"){
-cols.forEach((k,i)=>{
-const td=document.createElement("td");
-if(i===1){
-td.textContent=row.b||"";
-td.style.fontWeight="700";
-}
-tr.appendChild(td);
-});
-}else{
-cols.forEach((k,idx)=>{
-const td=document.createElement("td");
-if(idx===4) td.classList.add("wash-col");
-const inp=document.createElement("input");
-inp.type="text";
-inp.inputMode="text";
-inp.autocapitalize="off";
-inp.autocorrect="off";
-inp.spellcheck=false;
-inp.value=row[k]||"";
-inp.addEventListener("input",e=>{
-state[key][ri][k]=e.target.value;
-buildInndata();
-buildSporplan();
-buildOppstilling();
-persist(true);
-});
-td.appendChild(inp);
-tr.appendChild(td);
-});
-}
+    if(row.type==="header"){
+      cols.forEach((k,idx)=>{
+        const th=document.createElement("th");
+        th.textContent=row[k]||"";
+        if(idx===4) th.classList.add("wash-col");
+        tr.appendChild(th);
+      });
+    }else if(row.type==="section"){
+      cols.forEach((k,i)=>{
+        const td=document.createElement("td");
+        if(i===1){
+          td.textContent=row.b||"";
+          td.style.fontWeight="700";
+        }
+        tr.appendChild(td);
+      });
+    }else{
+      cols.forEach((k,idx)=>{
+        const td=document.createElement("td");
+        if(idx===4) td.classList.add("wash-col");
+        const inp=document.createElement("input");
+        inp.type="text";
+        inp.inputMode="text";
+        inp.autocapitalize="off";
+        inp.autocorrect="off";
+        inp.spellcheck=false;
+        inp.value=row[k]||"";
+        inp.addEventListener("input",e=>{
+          state[key][ri][k]=e.target.value;
+          buildInndata();
+          buildSporplan();
+          buildOppstilling();
+          persist(true);
+        });
+        td.appendChild(inp);
+        tr.appendChild(td);
+      });
+    }
+    body.appendChild(tr);
+  });
 
-body.appendChild(tr);
-});
-
-table.appendChild(body);
+  table.appendChild(body);
 }
 
 function buildInndata(){
-const data=computeInndata();
-const table=document.getElementById("inndataTable");
-table.innerHTML="<thead><tr><th>Slot</th><th>Tognummer</th><th>Materiellnr</th><th class='wash-col'>Vask</th></tr></thead>";
-const body=document.createElement("tbody");
+  const data=computeInndata();
+  const table=document.getElementById("inndataTable");
+  table.innerHTML="<thead><tr><th>Slot</th><th>Tognummer</th><th>Materiellnr</th><th class='wash-col'>Vask</th></tr></thead>";
+  const body=document.createElement("tbody");
 
-data.forEach(r=>{
-const tr=document.createElement("tr");
-tr.innerHTML=`<td class="slotcol">${r.slot}</td><td>${escapeHtml(r.tog)}</td><td>${escapeHtml(r.mat)}</td><td class="wash-col">${r.wash?"ja":""}</td>`;
-body.appendChild(tr);
-});
+  data.forEach(r=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="slotcol">${r.slot}</td><td>${escapeHtml(r.tog)}</td><td>${escapeHtml(r.mat)}</td><td class="wash-col">${r.wash?"ja":""}</td>`;
+    body.appendChild(tr);
+  });
 
-table.appendChild(body);
+  table.appendChild(body);
 }
 
 function computeOppstillingLookup(){
-const lookup={};
+  const lookup={};
 
-function applyRows(rows){
-rows.forEach(row=>{
-if(row.type) return;
+  function applyRows(rows){
+    rows.forEach(row=>{
+      if(row.type) return;
 
-const tog=normalizeTognr(row.b);
-if(!tog) return;
+      const tog=normalizeTognr(row.b);
+      if(!tog) return;
 
-if(!lookup[tog]) lookup[tog]={sett1:"",sett2:""};
-lookup[tog].sett1=String(row.f||"").trim();
-lookup[tog].sett2=String(row.h||"").trim();
-});
-}
+      if(!lookup[tog]) lookup[tog]={sett1:"",sett2:""};
+      lookup[tog].sett1=String(row.f||"").trim();
+      lookup[tog].sett2=String(row.h||"").trim();
+    });
+  }
 
-applyRows(state.turneringKveld);
-applyRows(state.turneringNatt);
+  applyRows(state.turneringKveld);
+  applyRows(state.turneringNatt);
 
-return lookup;
+  return lookup;
 }
 
 function importKjoretoyFromText(raw){
-const lines=String(raw||"").split(/\r?\n/);
-const map={...state.kjoretoy};
+  const lines=String(raw||"").split(/\r?\n/);
+  const map={...state.kjoretoy};
 
-lines.forEach(line=>{
-const tog=normalizeTognr(line);
-if(!tog) return;
+  lines.forEach(line=>{
+    const tog=normalizeTognr(line);
+    if(!tog) return;
 
-const baliseCurrent = sanitizeVehicleValue(getSelectedBaliseMap()[tog]);
-const staticValue = sanitizeVehicleValue(vehicleLookup[tog]);
-map[tog]= baliseCurrent || staticValue || "";
-});
+    const baliseCurrent = sanitizeVehicleValue(getSelectedBaliseMap()[tog]);
+    const staticValue = sanitizeVehicleValue(vehicleLookup[tog]);
+    map[tog]= baliseCurrent || staticValue || "";
+  });
 
-state.kjoretoy=map;
-state.useStaticVehicleLookup = true;
-persist(true);
-buildOppstilling();
+  state.kjoretoy=map;
+  state.useStaticVehicleLookup = true;
+  persist(true);
+  buildOppstilling();
 }
 
 function getAllTursattRows(){
-const fixedMap = Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r]));
-const trains = new Set();
+  const fixedMap = Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r]));
+  const trains = new Set();
+  const departureMap = getSelectedDepartureMap();
+  const baliseMap = getSelectedBaliseMap();
 
-function addTrain(tog){
-const t = normalizeTognr(tog);
-if(!t) return;
-if(t.toLowerCase() === "ikke tursatt") return;
-trains.add(t);
-}
+  function addTrain(tog){
+    const t = normalizeTognr(tog);
+    if(!t) return;
+    if(t.toLowerCase() === "ikke tursatt") return;
+    trains.add(t);
+  }
 
-// 1. Faste rader skal alltid med
-fixedOppstillingRows.forEach(r => addTrain(r.train));
+  fixedOppstillingRows.forEach(r => addTrain(r.train));
 
-// 2. Tog som faktisk finnes i turneringstabellene skal med
-state.turneringKveld.forEach(r => {
-if(!r.type) addTrain(r.b);
-});
+  state.turneringKveld.forEach(r => {
+    if(!r.type) addTrain(r.b);
+  });
 
-state.turneringNatt.forEach(r => {
-if(!r.type) addTrain(r.b);
-});
+  state.turneringNatt.forEach(r => {
+    if(!r.type) addTrain(r.b);
+  });
 
-// 3. Manuelt importerte tog skal med
-Object.keys(state.kjoretoy || {}).forEach(addTrain);
+  Object.keys(state.kjoretoy || {}).forEach(addTrain);
+  Object.keys(departureMap).forEach(addTrain);
+  Object.keys(baliseMap).forEach(addTrain);
 
-const rows = Array.from(trains).map(train => {
-if(fixedMap[train]){
-return {...fixedMap[train]};
-}
+  const rows = Array.from(trains).map(train => {
+    if(fixedMap[train]){
+      return {...fixedMap[train]};
+    }
 
-return {
-time: "",
-train,
-mode: "enk",
-highlight: false,
-togClass: "",
-modeClass: "opp-greytext"
-};
-});
+    return {
+      time: departureMap[train] || "",
+      train,
+      mode: "enk",
+      highlight: false,
+      togClass: "",
+      modeClass: "opp-greytext"
+    };
+  });
 
-rows.sort((a,b) => {
-const ta = a.time || "99:99";
-const tb = b.time || "99:99";
+  rows.sort((a,b) => {
+    const ta = a.time || "99:99";
+    const tb = b.time || "99:99";
 
-if(ta !== tb) return ta.localeCompare(tb, "no");
+    if(ta !== tb) return ta.localeCompare(tb, "no");
 
-const na = Number(a.train);
-const nb = Number(b.train);
+    const na = Number(a.train);
+    const nb = Number(b.train);
 
-if(!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+    if(!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
 
-return String(a.train).localeCompare(String(b.train), "no");
-});
+    return String(a.train).localeCompare(String(b.train), "no");
+  });
 
-return rows;
+  return rows;
 }
 
 function buildOppstilling(){
-const lookup=computeOppstillingLookup();
-const table=document.getElementById("oppstillingTable");
-table.innerHTML="";
-const thead=document.createElement("thead");
-thead.innerHTML="<tr><th>avg. kl.</th><th>tognr.</th><th>Kjøretøy</th><th>enk/dobb</th><th>sett nr.1</th><th>sett nr.2</th></tr>";
-table.appendChild(thead);
+  const lookup=computeOppstillingLookup();
+  const table=document.getElementById("oppstillingTable");
+  table.innerHTML="";
+  const thead=document.createElement("thead");
+  thead.innerHTML="<tr><th>avg. kl.</th><th>tognr.</th><th>Kjøretøy</th><th>enk/dobb</th><th>sett nr.1</th><th>sett nr.2</th></tr>";
+  table.appendChild(thead);
 
-const body=document.createElement("tbody");
+  const body=document.createElement("tbody");
 
-getAllTursattRows().forEach(row=>{
-const tr=document.createElement("tr");
-if(row.highlight) tr.classList.add("opp-yellow");
+  getAllTursattRows().forEach(row=>{
+    const tr=document.createElement("tr");
+    if(row.highlight) tr.classList.add("opp-yellow");
 
-const tdTime=document.createElement("td");
-tdTime.textContent=row.time || "";
-tr.appendChild(tdTime);
+    const tdTime=document.createElement("td");
+    tdTime.textContent=row.time || "";
+    tr.appendChild(tdTime);
 
-const tdTrain=document.createElement("td");
-tdTrain.textContent=row.train;
-if(row.togClass) tdTrain.className=row.togClass;
-tr.appendChild(tdTrain);
+    const tdTrain=document.createElement("td");
+    tdTrain.textContent=row.train;
+    if(row.togClass) tdTrain.className=row.togClass;
+    tr.appendChild(tdTrain);
 
-const tdVehicle=document.createElement("td");
-const vehicleValue=getVehicleForTrain(row.train);
-tdVehicle.textContent=vehicleValue || "Ikke Tursatt";
-tr.appendChild(tdVehicle);
+    const tdVehicle=document.createElement("td");
+    const vehicleValue=getVehicleForTrain(row.train);
+    tdVehicle.textContent=vehicleValue || "Ikke Tursatt";
+    tr.appendChild(tdVehicle);
 
-const tdMode=document.createElement("td");
-const inp=document.createElement("input");
-inp.type="text";
-inp.inputMode="text";
-inp.autocapitalize="off";
-inp.autocorrect="off";
-inp.spellcheck=false;
-inp.value=state.oppstillingModes[row.train] || row.mode || "enk";
-if(row.modeClass) inp.classList.add(row.modeClass);
-inp.addEventListener("input",e=>{
-state.oppstillingModes[row.train]=e.target.value;
-persist(true);
-});
-tdMode.appendChild(inp);
-tr.appendChild(tdMode);
+    const tdMode=document.createElement("td");
+    const inp=document.createElement("input");
+    inp.type="text";
+    inp.inputMode="text";
+    inp.autocapitalize="off";
+    inp.autocorrect="off";
+    inp.spellcheck=false;
+    inp.value=state.oppstillingModes[row.train] || row.mode || "enk";
+    if(row.modeClass) inp.classList.add(row.modeClass);
+    inp.addEventListener("input",e=>{
+      state.oppstillingModes[row.train]=e.target.value;
+      persist(true);
+    });
+    tdMode.appendChild(inp);
+    tr.appendChild(tdMode);
 
-const match=lookup[row.train] || {sett1:"",sett2:""};
+    const match=lookup[row.train] || {sett1:"",sett2:""};
 
-const tdSet1=document.createElement("td");
-tdSet1.textContent=match.sett1 || "";
-tr.appendChild(tdSet1);
+    const tdSet1=document.createElement("td");
+    tdSet1.textContent=match.sett1 || "";
+    tr.appendChild(tdSet1);
 
-const tdSet2=document.createElement("td");
-tdSet2.textContent=match.sett2 || "";
-tr.appendChild(tdSet2);
+    const tdSet2=document.createElement("td");
+    tdSet2.textContent=match.sett2 || "";
+    tr.appendChild(tdSet2);
 
-body.appendChild(tr);
-});
+    body.appendChild(tr);
+  });
 
-table.appendChild(body);
+  table.appendChild(body);
 }
 
 function slotKind(slot){
-if(!slot) return "";
-if(slot.endsWith("N")||slot==="9") return "blue";
-if(slot.endsWith("M")) return "yellow";
-return "orange";
+  if(!slot) return "";
+  if(slot.endsWith("N")||slot==="9") return "blue";
+  if(slot.endsWith("M")) return "yellow";
+  return "orange";
 }
 
 function buildSporplan(){
-const data=Object.fromEntries(computeInndata().map(r=>[r.slot,r]));
-const grid=document.getElementById("yardGrid");
-grid.innerHTML="";
+  const data=Object.fromEntries(computeInndata().map(r=>[r.slot,r]));
+  const grid=document.getElementById("yardGrid");
+  grid.innerHTML="";
 
-["12","11","10","9","8","7","","6","5","4","3","","2","1"].forEach(txt=>{
-const d=document.createElement("div");
-d.className="head";
-d.textContent=txt;
-grid.appendChild(d);
-});
+  ["12","11","10","9","8","7","","6","5","4","3","","2","1"].forEach(txt=>{
+    const d=document.createElement("div");
+    d.className="head";
+    d.textContent=txt;
+    grid.appendChild(d);
+  });
 
-function appendRow(row){
-row.forEach(slot=>{
-if(slot==="platform"){
-const p=document.createElement("div");
-p.className="platform";
-p.textContent="Plattform";
-grid.appendChild(p);
-return;
-}
+  function appendRow(row){
+    row.forEach(slot=>{
+      if(slot==="platform"){
+        const p=document.createElement("div");
+        p.className="platform";
+        p.textContent="Plattform";
+        grid.appendChild(p);
+        return;
+      }
 
-if(!slot){
-const e=document.createElement("div");
-e.className="empty-space";
-grid.appendChild(e);
-return;
-}
+      if(!slot){
+        const e=document.createElement("div");
+        e.className="empty-space";
+        grid.appendChild(e);
+        return;
+      }
 
-const info=data[slot]||{tog:"",mat:"",wash:false};
-const filled=Boolean((info.tog||"").trim()||(info.mat||"").trim());
-const fillClass=filled?(info.wash?"wash-filled":"filled"):"empty";
+      const info=data[slot]||{tog:"",mat:"",wash:false};
+      const filled=Boolean((info.tog||"").trim()||(info.mat||"").trim());
+      const fillClass=filled?(info.wash?"wash-filled":"filled"):"empty";
 
-const div=document.createElement("div");
-div.className=`slot ${fillClass} ${slotKind(slot)}`;
+      const div=document.createElement("div");
+      div.className=`slot ${fillClass} ${slotKind(slot)}`;
 
-if(["7N","7S","8N","8S"].includes(slot)) div.classList.add("hall");
+      if(["7N","7S","8N","8S"].includes(slot)) div.classList.add("hall");
 
-if(filled){
-let html="";
-if(info.tog){
-html += "<span class='slot-top'>" + escapeHtml(info.tog) + "</span>";
-}
-if(info.mat){
-html += "<span class='slot-bottom mat'>" + escapeHtml(info.mat) + "</span>";
-}
-div.innerHTML=html;
-}else{
-div.textContent=slot;
-}
+      if(filled){
+        let html="";
+        if(info.tog){
+          html += "<span class='slot-top'>" + escapeHtml(info.tog) + "</span>";
+        }
+        if(info.mat){
+          html += "<span class='slot-bottom mat'>" + escapeHtml(info.mat) + "</span>";
+        }
+        div.innerHTML=html;
+      }else{
+        div.textContent=slot;
+      }
 
-grid.appendChild(div);
-});
-}
+      grid.appendChild(div);
+    });
+  }
 
-appendRow(topRow);
-appendRow(midRow);
-appendRow(botRow);
+  appendRow(topRow);
+  appendRow(midRow);
+  appendRow(botRow);
 
-const values=Object.values(data);
-const filledCount=values.filter(v=>(v.tog||"").trim()||(v.mat||"").trim()).length;
-const washCount=values.filter(v=>v.wash&&((v.tog||"").trim()||(v.mat||"").trim())).length;
+  const values=Object.values(data);
+  const filledCount=values.filter(v=>(v.tog||"").trim()||(v.mat||"").trim()).length;
+  const washCount=values.filter(v=>v.wash&&((v.tog||"").trim()||(v.mat||"").trim())).length;
 
-document.getElementById("stats").innerHTML=`<div class="chip">Fylte slots: ${filledCount}</div><div class="chip">Totalt slots: ${inputSlots.length}</div><div class="chip">Vask = ja: ${washCount}</div>`;
+  document.getElementById("stats").innerHTML=`<div class="chip">Fylte slots: ${filledCount}</div><div class="chip">Totalt slots: ${inputSlots.length}</div><div class="chip">Vask = ja: ${washCount}</div>`;
 }
 
 function activateTab(name){
-document.querySelectorAll(".seg").forEach(btn=>btn.classList.toggle("active",btn.dataset.tab===name));
-document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===name));
-window.scrollTo({top:0,behavior:"smooth"});
+  document.querySelectorAll(".seg").forEach(btn=>btn.classList.toggle("active",btn.dataset.tab===name));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===name));
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
 function escapeHtml(s){
-return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+  return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 }
 
 function applyView(targetId){
-const el=document.getElementById(targetId);
-const view=state.views[targetId];
-if(!el||!view) return;
+  const el=document.getElementById(targetId);
+  const view=state.views[targetId];
+  if(!el||!view) return;
 
-el.style.transform=`scale(${view.scale})`;
-el.style.transformOrigin="top left";
-el.style.marginBottom=`${Math.max(0,(view.scale-1)*120)}px`;
+  el.style.transform=`scale(${view.scale})`;
+  el.style.transformOrigin="top left";
+  el.style.marginBottom=`${Math.max(0,(view.scale-1)*120)}px`;
 
-if(targetId==="yardZoom"){
-document.documentElement.style.setProperty("--yard-col", view.compact ? "56px" : (window.innerWidth<700?"64px":"78px"));
-document.documentElement.style.setProperty("--yard-gap", view.compact ? "3px" : (window.innerWidth<700?"4px":"6px"));
-document.documentElement.style.setProperty("--yard-min", view.compact ? "860px" : (window.innerWidth<700?"980px":"1180px"));
-document.documentElement.style.setProperty("--slot-min-h", view.compact ? "64px" : (window.innerWidth<700?"74px":"92px"));
-document.documentElement.style.setProperty("--slot-font", view.compact ? "12px" : (window.innerWidth<700?"14px":"17px"));
-document.documentElement.style.setProperty("--mat-font", view.compact ? "10px" : (window.innerWidth<700?"11px":"14px"));
-}else{
-document.documentElement.style.setProperty("--table-min", view.compact ? "620px" : (window.innerWidth<700?"760px":"980px"));
-document.documentElement.style.setProperty("--cell-min", view.compact ? "46px" : (window.innerWidth<700?"58px":"72px"));
-document.documentElement.style.setProperty("--cell-h", view.compact ? "32px" : (window.innerWidth<700?"38px":"46px"));
-document.documentElement.style.setProperty("--input-h", view.compact ? "24px" : (window.innerWidth<700?"30px":"36px"));
-document.documentElement.style.setProperty("--input-font", view.compact ? "12px" : (window.innerWidth<700?"14px":"16px"));
-}
+  if(targetId==="yardZoom"){
+    document.documentElement.style.setProperty("--yard-col", view.compact ? "56px" : (window.innerWidth<700?"64px":"78px"));
+    document.documentElement.style.setProperty("--yard-gap", view.compact ? "3px" : (window.innerWidth<700?"4px":"6px"));
+    document.documentElement.style.setProperty("--yard-min", view.compact ? "860px" : (window.innerWidth<700?"980px":"1180px"));
+    document.documentElement.style.setProperty("--slot-min-h", view.compact ? "64px" : (window.innerWidth<700?"74px":"92px"));
+    document.documentElement.style.setProperty("--slot-font", view.compact ? "12px" : (window.innerWidth<700?"14px":"17px"));
+    document.documentElement.style.setProperty("--mat-font", view.compact ? "10px" : (window.innerWidth<700?"11px":"14px"));
+  }else{
+    document.documentElement.style.setProperty("--table-min", view.compact ? "620px" : (window.innerWidth<700?"760px":"980px"));
+    document.documentElement.style.setProperty("--cell-min", view.compact ? "46px" : (window.innerWidth<700?"58px":"72px"));
+    document.documentElement.style.setProperty("--cell-h", view.compact ? "32px" : (window.innerWidth<700?"38px":"46px"));
+    document.documentElement.style.setProperty("--input-h", view.compact ? "24px" : (window.innerWidth<700?"30px":"36px"));
+    document.documentElement.style.setProperty("--input-font", view.compact ? "12px" : (window.innerWidth<700?"14px":"16px"));
+  }
 }
 
 function initViewControls(){
-document.querySelectorAll(".zoom-in").forEach(btn=>{
-btn.addEventListener("click",()=>{
-const id=btn.dataset.target;
-state.views[id].scale=Math.min(1.8,(state.views[id].scale||1)+0.1);
-applyView(id);
-persist(true);
-});
-});
+  document.querySelectorAll(".zoom-in").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const id=btn.dataset.target;
+      state.views[id].scale=Math.min(1.8,(state.views[id].scale||1)+0.1);
+      applyView(id);
+      persist(true);
+    });
+  });
 
-document.querySelectorAll(".zoom-out").forEach(btn=>{
-btn.addEventListener("click",()=>{
-const id=btn.dataset.target;
-state.views[id].scale=Math.max(0.45,(state.views[id].scale||1)-0.1);
-applyView(id);
-persist(true);
-});
-});
+  document.querySelectorAll(".zoom-out").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const id=btn.dataset.target;
+      state.views[id].scale=Math.max(0.45,(state.views[id].scale||1)-0.1);
+      applyView(id);
+      persist(true);
+    });
+  });
 
-document.querySelectorAll(".compact-toggle").forEach(btn=>{
-btn.addEventListener("click",()=>{
-const id=btn.dataset.target;
-state.views[id].compact=!state.views[id].compact;
-applyView(id);
-persist(true);
-});
-});
+  document.querySelectorAll(".compact-toggle").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const id=btn.dataset.target;
+      state.views[id].compact=!state.views[id].compact;
+      applyView(id);
+      persist(true);
+    });
+  });
 
-document.querySelectorAll(".reset-view").forEach(btn=>{
-btn.addEventListener("click",()=>{
-const id=btn.dataset.target;
-state.views[id]={scale:1,compact:false};
-applyView(id);
-persist(true);
-});
-});
+  document.querySelectorAll(".reset-view").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const id=btn.dataset.target;
+      state.views[id]={scale:1,compact:false};
+      applyView(id);
+      persist(true);
+    });
+  });
 
-["yardZoom","kveldZoom","nattZoom","inndataZoom","oppstillingZoom"].forEach(applyView);
+  ["yardZoom","kveldZoom","nattZoom","inndataZoom","oppstillingZoom"].forEach(applyView);
 }
 
 document.querySelectorAll(".seg").forEach(btn=>btn.addEventListener("click",()=>activateTab(btn.dataset.tab)));
-
 document.getElementById("saveBtn").addEventListener("click",()=>persist(false));
 
 document.getElementById("resetBtn").addEventListener("click",()=>{
-if(!confirm("Nullstille hele appen?")) return;
-state=makeDefaultState();
-state.useStaticVehicleLookup = false;
-persist(false);
-buildTurnering("turneringKveldTable","turneringKveld");
-buildTurnering("turneringNattTable","turneringNatt");
-buildInndata();
-buildSporplan();
-buildOppstilling();
-initViewControls();
-updateBaliseStatus();
-updateBaliseViewState();
-activateTab("sporplan");
+  if(!confirm("Nullstille hele appen?")) return;
+
+  localStorage.removeItem(STORAGE_KEY);
+  state=makeDefaultState();
+  state.useStaticVehicleLookup = false;
+
+  buildTurnering("turneringKveldTable","turneringKveld");
+  buildTurnering("turneringNattTable","turneringNatt");
+  buildInndata();
+  buildSporplan();
+  buildOppstilling();
+  initViewControls();
+  updateBaliseStatus();
+  updateBaliseViewState();
+  activateTab("sporplan");
+  markSaved("Nullstilt");
 });
 
 document.getElementById("showTodayBtn").addEventListener("click", ()=>{
-state.baliseSelectedMode = "idag";
-persist(true);
-buildOppstilling();
-updateBaliseStatus();
-updateBaliseViewState();
+  state.baliseSelectedMode = "idag";
+  persist(true);
+  buildOppstilling();
+  updateBaliseStatus();
+  updateBaliseViewState();
 });
 
 document.getElementById("showTomorrowBtn").addEventListener("click", ()=>{
-state.baliseSelectedMode = "imorgen";
-persist(true);
-buildOppstilling();
-updateBaliseStatus();
-updateBaliseViewState();
+  state.baliseSelectedMode = "imorgen";
+  persist(true);
+  buildOppstilling();
+  updateBaliseStatus();
+  updateBaliseViewState();
 });
 
 document.getElementById("importBaliseJsonBtn").addEventListener("click",()=>{
-const fileInput=document.getElementById("baliseJsonFile");
-const file=fileInput.files && fileInput.files[0];
+  const fileInput=document.getElementById("baliseJsonFile");
+  const file=fileInput.files && fileInput.files[0];
 
-if(!file){
-alert("Velg en JSON-fil først.");
-return;
-}
+  if(!file){
+    alert("Velg en JSON-fil først.");
+    return;
+  }
 
-const reader=new FileReader();
-reader.onload=()=>{
-try{
-const payload=JSON.parse(reader.result);
-importBaliseJsonObject(payload);
-alert(`Balise-JSON lastet inn for ${payload.mode || "ukjent modus"}.`);
-}catch(err){
-alert("Klarte ikke å lese JSON-fil: " + err.message);
-}
-};
-reader.readAsText(file,"utf-8");
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const payload=JSON.parse(reader.result);
+      importBaliseJsonObject(payload);
+      alert(`Balise-JSON lastet inn for ${payload.mode || "ukjent modus"}.`);
+    }catch(err){
+      alert("Klarte ikke å lese JSON-fil: " + err.message);
+    }
+  };
+  reader.readAsText(file,"utf-8");
 });
 
 document.getElementById("clearBaliseJsonBtn").addEventListener("click",()=>{
-if(!confirm("Tømme innlest Balise-data for valgt visning?")) return;
+  if(!confirm("Tømme innlest Balise-data for valgt visning?")) return;
 
-if(state.baliseSelectedMode === "imorgen"){
-state.baliseTomorrow = {};
-state.baliseMetaTomorrow = null;
-}else{
-state.baliseToday = {};
-state.baliseMetaToday = null;
-}
+  if(state.baliseSelectedMode === "imorgen"){
+    state.baliseTomorrow = {};
+    state.baliseTomorrowDepartures = {};
+    state.baliseMetaTomorrow = null;
+  }else{
+    state.baliseToday = {};
+    state.baliseTodayDepartures = {};
+    state.baliseMetaToday = null;
+  }
 
-persist(true);
-buildOppstilling();
-updateBaliseStatus();
-updateBaliseViewState();
+  persist(true);
+  buildOppstilling();
+  updateBaliseStatus();
+  updateBaliseViewState();
 });
 
 document.getElementById("importKjoretoyBtn").addEventListener("click",()=>{
-const raw=document.getElementById("kjoretoyImport").value;
-importKjoretoyFromText(raw);
+  const raw=document.getElementById("kjoretoyImport").value;
+  importKjoretoyFromText(raw);
 });
 
 document.getElementById("clearKjoretoyBtn").addEventListener("click",()=>{
-if(!confirm("Tømme alle manuelle kjøretøydata?")) return;
-state.kjoretoy={};
-persist(true);
-buildOppstilling();
+  if(!confirm("Tømme alle manuelle kjøretøydata?")) return;
+  state.kjoretoy={};
+  persist(true);
+  buildOppstilling();
 });
 
 buildTurnering("turneringKveldTable","turneringKveld");
