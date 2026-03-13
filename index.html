@@ -894,12 +894,10 @@ if(t.toLowerCase() === "ikke tursatt") return;
 trains.add(t);
 }
 
+// 1. Faste rader skal alltid med
 fixedOppstillingRows.forEach(r => addTrain(r.train));
-Object.keys(vehicleLookup).forEach(addTrain);
-Object.keys(state.kjoretoy || {}).forEach(addTrain);
-Object.keys(state.baliseToday || {}).forEach(addTrain);
-Object.keys(state.baliseTomorrow || {}).forEach(addTrain);
 
+// 2. Tog som faktisk finnes i turneringstabellene skal med
 state.turneringKveld.forEach(r => {
 if(!r.type) addTrain(r.b);
 });
@@ -907,6 +905,9 @@ if(!r.type) addTrain(r.b);
 state.turneringNatt.forEach(r => {
 if(!r.type) addTrain(r.b);
 });
+
+// 3. Manuelt importerte tog skal med
+Object.keys(state.kjoretoy || {}).forEach(addTrain);
 
 const rows = Array.from(trains).map(train => {
 if(fixedMap[train]){
