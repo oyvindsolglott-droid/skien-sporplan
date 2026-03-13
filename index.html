@@ -277,7 +277,7 @@ h1{font-size:20px}
 <body>
 <div class="app">
 <h1>Skien sporplan</h1>
-<p class="sub">versjon 3.1.6 / tråd 1.34</p>
+<p class="sub">versjon 3.1.6 / tråd 1.35</p>
 
 <div class="ios-banner">Data legges inn i ark "Turnering Kveld" og "Turnering Natt". Last helst inn datostemplet Balise-JSON når du vil ha klokkeslett i Tursatt.</div>
 
@@ -616,6 +616,50 @@ function sanitizeVehicleValue(v){
   return isInvalidVehicleValue(s) ? "" : s;
 }
 
+function normalizeTimeString(v){
+  const s = String(v || "").trim();
+  const m = s.match(/\b(\d{1,2}):(\d{2})\b/);
+  if(!m) return "";
+  return `${m[1].padStart(2,"0")}:${m[2]}`;
+}
+
+function readTrainNo(obj){
+  if(!obj || typeof obj !== "object") return "";
+  return normalizeTognr(
+    obj.train_no ??
+    obj.trainNo ??
+    obj.train ??
+    obj.tognr ??
+    obj.tognummer ??
+    obj.number ??
+    obj.no ??
+    ""
+  );
+}
+
+function readDepartureTime(obj){
+  if(!obj || typeof obj !== "object") return "";
+  const candidates = [
+    obj.time,
+    obj.departure,
+    obj.departure_time,
+    obj.departureTime,
+    obj.advertised_time,
+    obj.advertisedTime,
+    obj.scheduled_time,
+    obj.scheduledTime,
+    obj.public_time,
+    obj.publicTime
+  ];
+
+  for(const candidate of candidates){
+    const t = normalizeTimeString(candidate);
+    if(t) return t;
+  }
+
+  return "";
+}
+
 function persist(auto=false){
   localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
   markSaved(auto?"Lagret automatisk":"Lagret");
@@ -687,11 +731,15 @@ function updateBaliseStatus(){
 
 function buildDepartureMapFromPayload(payload){
   const map = {};
-  const departures = Array.isArray(payload?.departures) ? payload.departures : [];
+  const departures = Array.isArray(payload?.departures)
+    ? payload.departures
+    : Array.isArray(payload?.data?.departures)
+      ? payload.data.departures
+      : [];
 
   departures.forEach(dep=>{
-    const tog = normalizeTognr(dep.train_no);
-    const time = String(dep.time || "").trim();
+    const tog = readTrainNo(dep);
+    const time = readDepartureTime(dep);
     if(tog && time && !map[tog]){
       map[tog] = time;
     }
@@ -700,37 +748,60 @@ function buildDepartureMapFromPayload(payload){
   return map;
 }
 
+function buildVehicleMapFromPayload(payload){
+  const vehiclesRaw = payload?.vehicles ?? payload?.data?.vehicles;
+  const cleanedVehicles = {};
+
+  if(Array.isArray(vehiclesRaw)){
+    vehiclesRaw.forEach(item=>{
+      if(!item || typeof item !== "object") return;
+      const tog = readTrainNo(item);
+      const value = sanitizeVehicleValue(
+        item.vehicle ??
+        item.vehicles ??
+        item.material ??
+        item.kjoretoy ??
+        item.value ??
+        ""
+      );
+      if(tog) cleanedVehicles[tog] = value;
+    });
+    return cleanedVehicles;
+  }
+
+  if(vehiclesRaw && typeof vehiclesRaw === "object"){
+    Object.entries(vehiclesRaw).forEach(([key,val])=>{
+      const tog = normalizeTognr(key);
+      if(!tog) return;
+      cleanedVehicles[tog] = sanitizeVehicleValue(val);
+    });
+    return cleanedVehicles;
+  }
+
+  throw new Error("JSON-fila mangler gyldig 'vehicles'-mapping.");
+}
+
 function importBaliseJsonObject(payload){
   if(!payload || typeof payload !== "object"){
     throw new Error("Ugyldig JSON-format");
   }
 
-  const vehicles = payload.vehicles;
-  if(!vehicles || typeof vehicles !== "object"){
-    throw new Error("JSON-fila mangler gyldig 'vehicles'-mapping.");
-  }
+  const cleanedVehicles = buildVehicleMapFromPayload(payload);
 
-  const mode = String(payload.mode || state.baliseSelectedMode || "").trim().toLowerCase();
-  const date = String(payload.date || "").trim();
+  const mode = String(payload.mode || payload?.data?.mode || state.baliseSelectedMode || "").trim().toLowerCase();
+  const date = String(payload.date || payload?.data?.date || "").trim();
 
   if(mode !== "idag" && mode !== "imorgen"){
     throw new Error("JSON-fila mangler gyldig mode ('idag' eller 'imorgen').");
   }
 
-  const cleanedVehicles = {};
-  Object.entries(vehicles).forEach(([key,val])=>{
-    const tog = normalizeTognr(key);
-    if(!tog) return;
-    cleanedVehicles[tog] = sanitizeVehicleValue(val);
-  });
-
   const departureMap = buildDepartureMapFromPayload(payload);
 
   const meta = {
-    source: payload.source || "balise.no",
+    source: payload.source || payload?.data?.source || "balise.no",
     mode,
     date,
-    generated_at: payload.generated_at || "",
+    generated_at: payload.generated_at || payload?.data?.generated_at || "",
     hasDepartures: Object.keys(departureMap).length > 0
   };
 
@@ -868,9 +939,20 @@ function computeOppstillingLookup(){
       if(row.type) return;
 
       const tog=normalizeTognr(row.b);
-      if(!tog) return;
+      if(!tog || tog.toLowerCase()==="ikke tursatt") return;
 
-      if(!lookup[tog]) lookup[tog]={sett1:"",sett2:""};
+      if(!lookup[tog]){
+        lookup[tog]={
+          sett1:"",
+          sett2:"",
+          time:"",
+          sources:[]
+        };
+      }
+
+      const time = normalizeTimeString(row.a);
+      if(time) lookup[tog].time = time;
+
       lookup[tog].sett1=String(row.f||"").trim();
       lookup[tog].sett2=String(row.h||"").trim();
     });
@@ -901,11 +983,8 @@ function importKjoretoyFromText(raw){
   buildOppstilling();
 }
 
-function getAllTursattRows(){
-  const fixedMap = Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r]));
+function getAllRelevantTursattTrains(){
   const trains = new Set();
-  const departureMap = getSelectedDepartureMap();
-  const baliseMap = getSelectedBaliseMap();
 
   function addTrain(tog){
     const t = normalizeTognr(tog);
@@ -925,16 +1004,30 @@ function getAllTursattRows(){
   });
 
   Object.keys(state.kjoretoy || {}).forEach(addTrain);
-  Object.keys(departureMap).forEach(addTrain);
-  Object.keys(baliseMap).forEach(addTrain);
+
+  return trains;
+}
+
+function getAllTursattRows(){
+  const fixedMap = Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r]));
+  const lookup = computeOppstillingLookup();
+  const departureMap = getSelectedDepartureMap();
+  const trains = getAllRelevantTursattTrains();
 
   const rows = Array.from(trains).map(train => {
+    const lookupTime = lookup[train]?.time || "";
+    const baliseTime = departureMap[train] || "";
+
     if(fixedMap[train]){
-      return {...fixedMap[train]};
+      const fixedRow = fixedMap[train];
+      return {
+        ...fixedRow,
+        time: baliseTime || fixedRow.time || lookupTime || ""
+      };
     }
 
     return {
-      time: departureMap[train] || "",
+      time: baliseTime || lookupTime || "",
       train,
       mode: "enk",
       highlight: false,
@@ -1220,7 +1313,7 @@ document.getElementById("importBaliseJsonBtn").addEventListener("click",()=>{
     try{
       const payload=JSON.parse(reader.result);
       importBaliseJsonObject(payload);
-      alert(`Balise-JSON lastet inn for ${payload.mode || "ukjent modus"}.`);
+      alert(`Balise-JSON lastet inn for ${payload.mode || payload?.data?.mode || "ukjent modus"}.`);
     }catch(err){
       alert("Klarte ikke å lese JSON-fil: " + err.message);
     }
