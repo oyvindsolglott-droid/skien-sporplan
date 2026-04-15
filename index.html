@@ -43,6 +43,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0}
 .app{max-width:1280px;margin:0 auto;padding:12px}
 h1{font-size:22px;margin:0 0 6px}
+h3{margin:0 0 8px;font-size:16px}
 .sub{margin:0 0 12px;color:var(--muted);font-size:14px}
 .ios-banner{background:#eef5ff;border:1px solid #bfd4ff;color:#274472;border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:14px}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
@@ -249,6 +250,44 @@ background:#dfefff;
 border-color:#9ec5ff;
 font-weight:700;
 }
+.api-box{
+background:#f7fbff;
+border:1px solid #cfe2ff;
+border-radius:12px;
+padding:12px;
+margin-bottom:12px;
+}
+.api-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
+margin-bottom:12px;
+}
+.api-mini-table{
+width:100%;
+min-width:0;
+border-collapse:collapse;
+background:#fff;
+}
+.api-mini-table th,
+.api-mini-table td{
+border:1px solid var(--line);
+padding:8px 10px;
+height:auto;
+min-width:0;
+}
+.api-mini-table th{
+position:static;
+background:#f3f4f6;
+}
+.api-error{
+color:#b00020;
+font-weight:700;
+}
+.api-muted{
+color:var(--muted);
+font-size:13px;
+}
 @media (max-width:1100px){
 .segmented{grid-template-columns:1fr 1fr 1fr}
 }
@@ -271,15 +310,16 @@ h1{font-size:20px}
 .panel{padding:10px}
 .ios-banner,.note,.sub{font-size:12px}
 .segmented{grid-template-columns:1fr 1fr}
+.api-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 <div class="app">
 <h1>Skien sporplan</h1>
-<p class="sub">versjon 3.1.6 / tråd 1.35</p>
+<p class="sub">versjon 3.1.6 / tråd 2</p>
 
-<div class="ios-banner">Data legges inn i ark "Turnering Kveld" og "Turnering Natt". Last helst inn datostemplet Balise-JSON når du vil ha klokkeslett i Tursatt.</div>
+<div class="ios-banner">Data legges inn i ark "Turnering Kveld" og "Turnering Natt". Last helst inn datostemplet Balise-JSON når du vil ha klokkeslett og kjøretøy i Tursatt.</div>
 
 <div class="toolbar">
 <button id="saveBtn" type="button">Lagre</button>
@@ -361,7 +401,30 @@ h1{font-size:20px}
 </section>
 
 <section class="panel" id="oppstilling">
-<div class="note">Tursatte tog vises samlet her. Fast reserveoppslag for 8xx beholdes i normal bruk. Ved <strong>Nullstill</strong> slettes kjøretøydata, men tognumrene blir stående. Last inn <strong>datostemplet Balise-JSON</strong> hvis du vil ha klokkeslett fra Balise i Tursatt.</div>
+<div class="note">Tursatte tog vises samlet her. Ved <strong>Nullstill</strong> slettes kjøretøydata, men tognumrene blir stående. Flask-API brukes nå for hardkodede ankomster og avganger. Kjøretøy skal ikke være hardkodet i frontend.</div>
+
+<div class="api-box">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+    <button type="button" id="refreshApiBtn">Hent fra app.py</button>
+    <span id="apiStatus" class="save-indicator">API ikke lest ennå</span>
+  </div>
+  <div id="apiMeta" class="api-muted">Ingen data fra /api/balise-vehicles ennå.</div>
+</div>
+
+<div class="api-grid">
+  <div class="api-box">
+    <h3>Hardkodede avganger fra app.py</h3>
+    <div class="zoom-wrap">
+      <table class="api-mini-table" id="apiDeparturesTable"></table>
+    </div>
+  </div>
+  <div class="api-box">
+    <h3>Hardkodede ankomster fra app.py</h3>
+    <div class="zoom-wrap">
+      <table class="api-mini-table" id="apiArrivalsTable"></table>
+    </div>
+  </div>
+</div>
 
 <div class="balise-toggle-bar">
 <button type="button" id="showTodayBtn" class="active">Vis Balise i dag</button>
@@ -382,11 +445,8 @@ Velg helst fila av typen <strong>skien_balise_YYYY-MM-DD.json</strong> for å f�
 </div>
 
 <div class="note">
-<strong>Manuell reserve</strong><br>
-Skriv bare ett tognummer per linje hvis du vil fylle fra reserveoppslag:
-<br>802
-<br>804
-<br>852
+<strong>Manuell kjøretøydata</strong><br>
+Skriv ett tognummer per linje. Hvis samme tog finnes i innlest Balise-data for valgt visning, brukes det kjøretøyet. Ellers blir tognummeret bare registrert uten hardkodet fallback.
 </div>
 
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px;">
@@ -413,64 +473,7 @@ Skriv bare ett tognummer per linje hvis du vil fylle fra reserveoppslag:
 </div>
 
 <script>
-const STORAGE_KEY="skien_sporplan_iphone_v11";
-
-const vehicleLookup = {
-"802":"74-02",
-"803":"74-11",
-"804":"75-40, 74-16",
-"805":"74-24",
-"806":"74-06, 74-37",
-"807":"74-46, 74-51",
-"808":"74-53, 74-14",
-"809":"74-02",
-"810":"74-42",
-"811":"74-16, 75-40",
-"812":"74-24, 74-11",
-"813":"74-37, 74-06",
-"814":"74-51, 74-46",
-"815":"74-14, 74-53",
-"816":"74-02",
-"817":"74-42",
-"818":"75-40, 74-16",
-"819":"74-11, 74-24",
-"820":"74-06, 74-37",
-"821":"74-46, 74-51",
-"822":"74-53, 74-14",
-"823":"74-16, 75-40",
-"824":"74-42",
-"825":"74-37, 74-06",
-"826":"74-24, 74-11",
-"827":"74-02",
-"828":"74-51, 74-46",
-"829":"74-14, 74-53",
-"830":"75-40, 74-16",
-"831":"74-42",
-"832":"74-06, 74-37",
-"833":"74-41, 74-10",
-"834":"74-02",
-"835":"74-51",
-"836":"74-53, 74-14",
-"837":"75-40",
-"838":"74-42",
-"839":"74-06",
-"840":"74-10",
-"851":"70-14",
-"852":"70-14",
-"853":"75-71",
-"854":"74-04",
-"855":"70-06",
-"856":"70-06",
-"861":"75-63",
-"862":"75-63",
-"863":"74-04",
-"864":"75-71",
-"873":"74-42",
-"2470":"70-12",
-"2472":"70-12",
-"2473":"70-12",
-"2489":"70-12"
-};
+const STORAGE_KEY="skien_sporplan_iphone_v13";
 
 const header={
 type:"header",
@@ -558,7 +561,15 @@ function makeDefaultState(){
     baliseMetaToday:null,
     baliseMetaTomorrow:null,
     baliseSelectedMode:"idag",
-    useStaticVehicleLookup:true,
+    apiBalise:{
+      ok:false,
+      updatedAt:"",
+      departures:{},
+      arrivals:{},
+      allowedMaterialPrefixes:[],
+      materialFormat:"",
+      error:""
+    },
     views:{
       yardZoom:{scale:1,compact:false},
       kveldZoom:{scale:1,compact:false},
@@ -583,7 +594,17 @@ if(!state.baliseTomorrowDepartures) state.baliseTomorrowDepartures={};
 if(!("baliseMetaToday" in state)) state.baliseMetaToday=null;
 if(!("baliseMetaTomorrow" in state)) state.baliseMetaTomorrow=null;
 if(!state.baliseSelectedMode) state.baliseSelectedMode="idag";
-if(!("useStaticVehicleLookup" in state)) state.useStaticVehicleLookup=true;
+if(!state.apiBalise){
+  state.apiBalise={
+    ok:false,
+    updatedAt:"",
+    departures:{},
+    arrivals:{},
+    allowedMaterialPrefixes:[],
+    materialFormat:"",
+    error:""
+  };
+}
 if(!state.views){
   state.views={
     yardZoom:{scale:1,compact:false},
@@ -677,6 +698,10 @@ function getSelectedDepartureMap(){
     : (state.baliseTodayDepartures || {});
 }
 
+function getApiDepartureMap(){
+  return state.apiBalise?.departures || {};
+}
+
 function getVehicleForTrain(tog){
   const train = normalizeTognr(tog);
 
@@ -685,11 +710,6 @@ function getVehicleForTrain(tog){
 
   const manualValue = sanitizeVehicleValue(state.kjoretoy[train]);
   if(manualValue) return manualValue;
-
-  if(state.useStaticVehicleLookup){
-    const staticValue = sanitizeVehicleValue(vehicleLookup[train]);
-    if(staticValue) return staticValue;
-  }
 
   return "";
 }
@@ -815,7 +835,6 @@ function importBaliseJsonObject(payload){
     state.baliseMetaTomorrow = meta;
   }
 
-  state.useStaticVehicleLookup = true;
   persist(true);
   buildOppstilling();
   updateBaliseStatus();
@@ -973,12 +992,10 @@ function importKjoretoyFromText(raw){
     if(!tog) return;
 
     const baliseCurrent = sanitizeVehicleValue(getSelectedBaliseMap()[tog]);
-    const staticValue = sanitizeVehicleValue(vehicleLookup[tog]);
-    map[tog]= baliseCurrent || staticValue || "";
+    map[tog] = baliseCurrent || "";
   });
 
   state.kjoretoy=map;
-  state.useStaticVehicleLookup = true;
   persist(true);
   buildOppstilling();
 }
@@ -1004,6 +1021,7 @@ function getAllRelevantTursattTrains(){
   });
 
   Object.keys(state.kjoretoy || {}).forEach(addTrain);
+  Object.keys(getApiDepartureMap()).forEach(addTrain);
 
   return trains;
 }
@@ -1012,22 +1030,24 @@ function getAllTursattRows(){
   const fixedMap = Object.fromEntries(fixedOppstillingRows.map(r => [r.train, r]));
   const lookup = computeOppstillingLookup();
   const departureMap = getSelectedDepartureMap();
+  const apiDepartureMap = getApiDepartureMap();
   const trains = getAllRelevantTursattTrains();
 
   const rows = Array.from(trains).map(train => {
     const lookupTime = lookup[train]?.time || "";
     const baliseTime = departureMap[train] || "";
+    const apiTime = apiDepartureMap[train] || "";
 
     if(fixedMap[train]){
       const fixedRow = fixedMap[train];
       return {
         ...fixedRow,
-        time: baliseTime || fixedRow.time || lookupTime || ""
+        time: baliseTime || apiTime || fixedRow.time || lookupTime || ""
       };
     }
 
     return {
-      time: baliseTime || lookupTime || "",
+      time: baliseTime || apiTime || lookupTime || "",
       train,
       mode: "enk",
       highlight: false,
@@ -1047,7 +1067,7 @@ function getAllTursattRows(){
 
     if(!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
 
-    return String(a.train).localeCompare(String(b.train), "no");
+    return String(a.train).localeCompare(String(a.train), "no");
   });
 
   return rows;
@@ -1261,6 +1281,157 @@ function initViewControls(){
   ["yardZoom","kveldZoom","nattZoom","inndataZoom","oppstillingZoom"].forEach(applyView);
 }
 
+function normalizeApiDepartureMap(raw){
+  const map = {};
+  if(!raw || typeof raw !== "object") return map;
+
+  Object.entries(raw).forEach(([train, value])=>{
+    const tog = normalizeTognr(train);
+    const time = normalizeTimeString(typeof value === "string" ? value : value?.time);
+    if(tog && time) map[tog] = time;
+  });
+
+  return map;
+}
+
+function normalizeApiArrivalMap(raw){
+  const map = {};
+  if(!raw || typeof raw !== "object") return map;
+
+  Object.entries(raw).forEach(([train, value])=>{
+    const tog = normalizeTognr(train);
+    if(!tog || !value || typeof value !== "object") return;
+
+    const time = normalizeTimeString(value.time);
+    if(!time) return;
+
+    map[tog] = {
+      time,
+      nextDay:Boolean(value.nextDay)
+    };
+  });
+
+  return map;
+}
+
+function renderApiTables(){
+  const departuresTable = document.getElementById("apiDeparturesTable");
+  const arrivalsTable = document.getElementById("apiArrivalsTable");
+  const apiStatus = document.getElementById("apiStatus");
+  const apiMeta = document.getElementById("apiMeta");
+
+  const api = state.apiBalise || {};
+  const departures = api.departures || {};
+  const arrivals = api.arrivals || {};
+
+  if(!api.ok){
+    departuresTable.innerHTML = "<tr><td>Ingen avganger fra API ennå</td></tr>";
+    arrivalsTable.innerHTML = "<tr><td>Ingen ankomster fra API ennå</td></tr>";
+
+    if(api.error){
+      apiStatus.innerHTML = `<span class="api-error">${escapeHtml(api.error)}</span>`;
+      apiMeta.textContent = "Klarte ikke å hente data fra /api/balise-vehicles.";
+    }else{
+      apiStatus.textContent = "API ikke lest ennå";
+      apiMeta.textContent = "Ingen data fra /api/balise-vehicles ennå.";
+    }
+    return;
+  }
+
+  apiStatus.textContent = `API lest: ${Object.keys(departures).length} avganger, ${Object.keys(arrivals).length} ankomster`;
+
+  const prefixes = Array.isArray(api.allowedMaterialPrefixes) ? api.allowedMaterialPrefixes.join(", ") : "";
+  apiMeta.textContent = `updatedAt: ${api.updatedAt || "ukjent"} | tillatte materiellprefiks: ${prefixes || "ukjent"} | format: ${api.materialFormat || "ukjent"}`;
+
+  const depRows = Object.entries(departures)
+    .sort((a,b)=>{
+      const ta = a[1] || "99:99";
+      const tb = b[1] || "99:99";
+      if(ta !== tb) return ta.localeCompare(tb, "no");
+      return a[0].localeCompare(b[0], "no");
+    });
+
+  departuresTable.innerHTML = "<thead><tr><th>Tognr.</th><th>Avgang</th></tr></thead>";
+  const depBody = document.createElement("tbody");
+  depRows.forEach(([train, time])=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${escapeHtml(train)}</td><td>${escapeHtml(time)}</td>`;
+    depBody.appendChild(tr);
+  });
+  if(depRows.length === 0){
+    const tr = document.createElement("tr");
+    tr.innerHTML = "<td colspan='2'>Ingen avganger i API-data</td>";
+    depBody.appendChild(tr);
+  }
+  departuresTable.appendChild(depBody);
+
+  const arrRows = Object.entries(arrivals)
+    .sort((a,b)=>{
+      const ta = a[1]?.time || "99:99";
+      const tb = b[1]?.time || "99:99";
+      if(ta !== tb) return ta.localeCompare(tb, "no");
+      return a[0].localeCompare(b[0], "no");
+    });
+
+  arrivalsTable.innerHTML = "<thead><tr><th>Tognr.</th><th>Ankomst</th><th>Neste dag</th></tr></thead>";
+  const arrBody = document.createElement("tbody");
+  arrRows.forEach(([train, info])=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${escapeHtml(train)}</td><td>${escapeHtml(info.time || "")}</td><td>${info.nextDay ? "ja" : ""}</td>`;
+    arrBody.appendChild(tr);
+  });
+  if(arrRows.length === 0){
+    const tr = document.createElement("tr");
+    tr.innerHTML = "<td colspan='3'>Ingen ankomster i API-data</td>";
+    arrBody.appendChild(tr);
+  }
+  arrivalsTable.appendChild(arrBody);
+}
+
+async function fetchBaliseApi(){
+  const apiStatus = document.getElementById("apiStatus");
+  const apiMeta = document.getElementById("apiMeta");
+
+  apiStatus.textContent = "Henter data fra /api/balise-vehicles ...";
+  apiMeta.textContent = "Laster ...";
+
+  try{
+    const response = await fetch("/api/balise-vehicles", {cache:"no-store"});
+    if(!response.ok){
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const payload = await response.json();
+
+    state.apiBalise = {
+      ok:Boolean(payload.ok),
+      updatedAt:String(payload.updatedAt || ""),
+      departures:normalizeApiDepartureMap(payload.departures),
+      arrivals:normalizeApiArrivalMap(payload.arrivals),
+      allowedMaterialPrefixes:Array.isArray(payload.allowedMaterialPrefixes) ? payload.allowedMaterialPrefixes.map(v=>String(v)) : [],
+      materialFormat:String(payload.materialFormat || ""),
+      error:""
+    };
+
+    persist(true);
+    renderApiTables();
+    buildOppstilling();
+  }catch(err){
+    state.apiBalise = {
+      ok:false,
+      updatedAt:"",
+      departures:{},
+      arrivals:{},
+      allowedMaterialPrefixes:[],
+      materialFormat:"",
+      error:`API-feil: ${err.message}`
+    };
+    persist(true);
+    renderApiTables();
+    buildOppstilling();
+  }
+}
+
 document.querySelectorAll(".seg").forEach(btn=>btn.addEventListener("click",()=>activateTab(btn.dataset.tab)));
 document.getElementById("saveBtn").addEventListener("click",()=>persist(false));
 
@@ -1269,7 +1440,6 @@ document.getElementById("resetBtn").addEventListener("click",()=>{
 
   localStorage.removeItem(STORAGE_KEY);
   state=makeDefaultState();
-  state.useStaticVehicleLookup = false;
 
   buildTurnering("turneringKveldTable","turneringKveld");
   buildTurnering("turneringNattTable","turneringNatt");
@@ -1279,8 +1449,14 @@ document.getElementById("resetBtn").addEventListener("click",()=>{
   initViewControls();
   updateBaliseStatus();
   updateBaliseViewState();
+  renderApiTables();
   activateTab("sporplan");
   markSaved("Nullstilt");
+  fetchBaliseApi();
+});
+
+document.getElementById("refreshApiBtn").addEventListener("click",()=>{
+  fetchBaliseApi();
 });
 
 document.getElementById("showTodayBtn").addEventListener("click", ()=>{
@@ -1360,8 +1536,10 @@ buildOppstilling();
 initViewControls();
 updateBaliseStatus();
 updateBaliseViewState();
+renderApiTables();
 activateTab("sporplan");
 markSaved("Klar");
+fetchBaliseApi();
 </script>
 </body>
 </html>
