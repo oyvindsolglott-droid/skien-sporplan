@@ -5,7 +5,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 INDEX_FILE = BASE_DIR / "index.html"
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=".", static_url_path="")
 
 HARDCODED_DEPARTURES = {
     "802": "04:10",
@@ -97,11 +97,6 @@ ALLOWED_MATERIAL_PREFIXES = ["69", "70", "74", "75"]
 
 @app.route("/")
 def index():
-    if not INDEX_FILE.exists():
-        return {
-            "ok": False,
-            "error": f"Finner ikke index.html på: {INDEX_FILE}"
-        }, 500
     return send_file(INDEX_FILE)
 
 
@@ -118,7 +113,7 @@ def balise():
 
 
 if __name__ == "__main__":
-    print("BASE_DIR =", BASE_DIR)
-    print("INDEX_FILE =", INDEX_FILE)
-    print("INDEX_EXISTS =", INDEX_FILE.exists())
+    print(f"BASE_DIR = {BASE_DIR}")
+    print(f"INDEX_FILE = {INDEX_FILE}")
+    print(f"INDEX_EXISTS = {INDEX_FILE.exists()}")
     app.run(debug=True)
