@@ -1,7 +1,10 @@
 from flask import Flask, jsonify, send_from_directory
 from datetime import datetime
+from pathlib import Path
 
-app = Flask(__name__, static_folder=".", static_url_path="")
+BASE_DIR = Path(__file__).resolve().parent
+
+app = Flask(__name__)
 
 HARDCODED_DEPARTURES = {
     "802": "04:10",
@@ -93,7 +96,7 @@ ALLOWED_MATERIAL_PREFIXES = ["69", "70", "74", "75"]
 
 @app.route("/")
 def index():
-    return send_from_directory(".", "index.html")
+    return send_from_directory(BASE_DIR, "index.html")
 
 
 @app.route("/api/balise-vehicles")
@@ -109,4 +112,4 @@ def balise():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
