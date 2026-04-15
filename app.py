@@ -1,8 +1,9 @@
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_file
 from datetime import datetime
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
+INDEX_FILE = BASE_DIR / "index.html"
 
 app = Flask(__name__)
 
@@ -96,7 +97,12 @@ ALLOWED_MATERIAL_PREFIXES = ["69", "70", "74", "75"]
 
 @app.route("/")
 def index():
-    return send_from_directory(BASE_DIR, "index.html")
+    if not INDEX_FILE.exists():
+        return {
+            "ok": False,
+            "error": f"Finner ikke index.html på: {INDEX_FILE}"
+        }, 500
+    return send_file(INDEX_FILE)
 
 
 @app.route("/api/balise-vehicles")
@@ -112,4 +118,7 @@ def balise():
 
 
 if __name__ == "__main__":
+    print("BASE_DIR =", BASE_DIR)
+    print("INDEX_FILE =", INDEX_FILE)
+    print("INDEX_EXISTS =", INDEX_FILE.exists())
     app.run(debug=True)
